@@ -1,7 +1,9 @@
 export type TripStatus =
-  | 'UPCOMING'
-  | 'IN_PROGRESS'
-  | 'COMPLETED';
+  | 'WAITING'
+  | 'RUNNING'
+  | 'DELAYED'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export interface Trip {
   id: string;

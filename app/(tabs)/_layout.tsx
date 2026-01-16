@@ -7,19 +7,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Hôm nay",
+          title: "Lịch làm việc",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="bus" size={size} color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="schedule"
-        options={{
-          title: "Lịch làm",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />

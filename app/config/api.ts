@@ -15,10 +15,16 @@ export const API_ENDPOINTS = {
     LOGOUT: '/auth/logout',
     REFRESH: '/auth/refresh',
   },
-  // Add more endpoint groups as needed
+
   USER: {
-    PROFILE: '/users/profile',
-    UPDATE: '/user/update',
+    // Profile
+    PROFILE: '/users/profile',                 // GET
+    UPDATE_PROFILE: '/users/profile',           // PUT
+    CHANGE_PASSWORD: '/users/profile/password', // PUT
+
+    // Avatar
+    UPLOAD_AVATAR: '/users/profile/avatar',     // POST (multipart)
+    DELETE_AVATAR: '/users/profile/avatar',     // DELETE
   },
   // Example: TRIP, TICKET, etc.
 } as const;

@@ -8,7 +8,6 @@ export type Profile = {
     roleName: string;
     roleDescription: string;
     avatarUrl?: string;
-    phone?: string;
     address?: string;
 };
 
