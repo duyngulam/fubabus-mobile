@@ -1,87 +1,110 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, ReactNode, useEffect, useState } from 'react';
-import { login } from '../services/authService';
-import { ApiError, User } from '../types/auth';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { login } from "../services/authService";
+import { ApiError } from "../types/auth";
+
+/* ================== TYPES ================== */
 
 type AuthState = {
   userToken: string | null;
-  user: User | null;
+  userID: number | null;
   isLoading: boolean;
 };
 
-type SignInCredentials = { emailOrPhone: string; password: string; remember?: boolean };
+type SignInCredentials = {
+  emailOrPhone: string;
+  password: string;
+  remember?: boolean;
+};
 
 type AuthContextType = AuthState & {
   signIn: (creds: SignInCredentials) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+/* ================== CONTEXT ================== */
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+/* ================== PROVIDER ================== */
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userToken, setUserToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [userID, setUserID] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  /* ---------- Restore session ---------- */
   useEffect(() => {
-    const restore = async () => {
+    const restoreAuth = async () => {
       try {
-        const token = await AsyncStorage.getItem('userToken');
-        if (token) {
-          setUserToken(token);
-          // Optionally restore a cached user object
-          const raw = await AsyncStorage.getItem('user');
-          if (raw) setUser(JSON.parse(raw));
-        }
+        const token = await AsyncStorage.getItem("userToken");
+        const storedUserID = await AsyncStorage.getItem("userID");
+
+        if (token) setUserToken(token);
+        if (storedUserID) setUserID(JSON.parse(storedUserID));
       } catch (e) {
-        console.warn('Auth restore failed', e);
+        console.warn("Auth restore failed", e);
       } finally {
         setIsLoading(false);
       }
     };
-    restore();
+
+    restoreAuth();
   }, []);
 
-  const signIn = async ({ emailOrPhone, password, remember = true }: SignInCredentials) => {
+  /* ---------- Sign in ---------- */
+  const signIn = async ({
+    emailOrPhone,
+    password,
+    remember = true,
+  }: SignInCredentials) => {
     setIsLoading(true);
     try {
-      // Call real API
       const response = await login({ emailOrPhone, password });
-      
-      setUserToken(response.token);
-      setUser(response.user);
-      
+
+      const { accessToken, userId } = response.data;
+
+      setUserToken(accessToken);
+      setUserID(userId);
+
       if (remember) {
-        await AsyncStorage.setItem('userToken', response.token);
-        await AsyncStorage.setItem('user', JSON.stringify(response.user));
-      } else {
-        await AsyncStorage.removeItem('userToken');
-        await AsyncStorage.removeItem('user');
+        await AsyncStorage.multiSet([
+          ["userToken", accessToken],
+          ["userID", JSON.stringify(userId)],
+        ]);
       }
     } catch (err) {
       const error = err as ApiError;
-      throw new Error(error.message || 'Đăng nhập thất bại');
+      throw new Error(error.message ?? "Đăng nhập thất bại");
     } finally {
       setIsLoading(false);
     }
   };
 
+  /* ---------- Sign out ---------- */
   const signOut = async () => {
     setIsLoading(true);
     try {
-      await AsyncStorage.removeItem('userToken');
-      await AsyncStorage.removeItem('user');
+      await AsyncStorage.multiRemove(["userToken", "userID"]);
       setUserToken(null);
-      setUser(null);
+      setUserID(null);
     } catch (e) {
-      console.warn('Sign out failed', e);
+      console.warn("Sign out failed", e);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ userToken, user, isLoading, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{ userToken, userID, isLoading, signIn, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

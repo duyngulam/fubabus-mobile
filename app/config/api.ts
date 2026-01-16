@@ -4,7 +4,7 @@
  */
 
 // Base API URL - change this for different environments
-export const API_BASE_URL = 'http://192.168.2.19:5230';
+export const API_BASE_URL = 'http://localhost:5230';
 
 // API Endpointsr
 
@@ -17,7 +17,7 @@ export const API_ENDPOINTS = {
   },
   // Add more endpoint groups as needed
   USER: {
-    PROFILE: '/user/profile',
+    PROFILE: '/users/profile',
     UPDATE: '/user/update',
   },
   // Example: TRIP, TICKET, etc.
