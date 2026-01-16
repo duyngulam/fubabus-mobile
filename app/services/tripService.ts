@@ -10,7 +10,7 @@ export const getTodayTrips = async (): Promise<Trip[]> => {
       date: '2025-12-05',
       startTime: '08:00',
       endTime: '14:30',
-      status: 'IN_PROGRESS',
+      status: 'WAITING',
       busPlate: '51B-12345',
     },
     {
@@ -21,7 +21,7 @@ export const getTodayTrips = async (): Promise<Trip[]> => {
       date: '2025-12-05',
       startTime: '16:00',
       endTime: '22:30',
-      status: 'UPCOMING',
+      status: 'WAITING',
       busPlate: '51B-12345',
     },
   ]);

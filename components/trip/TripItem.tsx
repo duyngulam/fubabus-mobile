@@ -62,7 +62,13 @@ export default function TripItem({
   };
 
   return (
-    <Pressable style={styles.container} onPress={onPress}>
+    <Pressable
+      style={styles.container}
+      onPress={() => {
+        console.log("TripItem clicked:", trip.id); // Add debug log
+        onPress();
+      }}
+    >
       <View style={styles.card}>
         {/* Route Header */}
         <View style={styles.routeHeader}>
@@ -114,7 +120,9 @@ export default function TripItem({
         {/* Vehicle Information */}
         <View style={styles.vehicleContainer}>
           <Ionicons name="bus-outline" size={16} color="#666" />
-          <Text style={styles.vehicleText}>Xe 51B-12345</Text>
+          <Text style={styles.vehicleText}>
+            Xe {trip.busPlate || "51B-12345"}
+          </Text>
           <View style={styles.spacer} />
           <Ionicons name="chevron-forward" size={16} color="#ccc" />
         </View>

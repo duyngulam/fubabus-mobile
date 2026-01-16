@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   FlatList,
+  Modal,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 
@@ -15,11 +17,14 @@ import { Trip } from "../types/trip";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function TripTodayScreen() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"today" | "week">("today");
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
 
   // Generate calendar data for the current month
   const generateCalendarDays = () => {
@@ -53,12 +58,49 @@ export default function TripTodayScreen() {
   }, []);
 
   const onSelectTrip = (trip: Trip) => {
-    if (trip.status !== "WAITING") return;
+    setSelectedTrip(trip);
+    setIsBottomSheetVisible(true);
+  };
 
+  const handleTripCheckIn = () => {
+    console.log("trip selected:", selectedTrip?.status);
+    if (!selectedTrip) {
+      console.log("no trip selected");
+      return;
+    }
+
+    if (
+      selectedTrip.status !== "WAITING" &&
+      selectedTrip.status !== "RUNNING"
+    ) {
+      Alert.alert(
+        "Thông báo",
+        "Chỉ có thể check-in cho chuyến đang chờ hoặc đang chạy"
+      );
+      return;
+    }
+    console.log("trip selected:", selectedTrip.id);
+
+    setIsBottomSheetVisible(false);
     router.push({
       pathname: "/trip-check-in",
-      params: { tripId: trip.id },
+      params: { tripId: selectedTrip.id },
     });
+  };
+
+  const handleRouteManagement = () => {
+    if (!selectedTrip) return;
+
+    setIsBottomSheetVisible(false);
+    router.push({
+      pathname: "/route-management",
+      params: { tripId: selectedTrip.id },
+    });
+  };
+
+  const closeBottomSheet = () => {
+    setIsBottomSheetVisible(false);
+    setSelectedTrip(null);
   };
 
   const formatDate = (date: Date) => {
@@ -185,6 +227,70 @@ export default function TripTodayScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Bottom Sheet Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isBottomSheetVisible}
+        onRequestClose={closeBottomSheet}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackground}
+            onPress={closeBottomSheet}
+          />
+          <View style={styles.bottomSheet}>
+            <View style={styles.bottomSheetHeader}>
+              <View style={styles.bottomSheetHandle} />
+              <ThemedText style={styles.bottomSheetTitle}>
+                Chọn hành động
+              </ThemedText>
+              <ThemedText style={styles.bottomSheetSubtitle}>
+                {selectedTrip?.routeName}
+              </ThemedText>
+            </View>
+
+            <View style={styles.bottomSheetContent}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleTripCheckIn}
+              >
+                <View style={styles.actionIcon}>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={24}
+                    color="#4CAF50"
+                  />
+                </View>
+                <View style={styles.actionInfo}>
+                  <Text style={styles.actionTitle}>Trip Check-in</Text>
+                  <Text style={styles.actionDescription}>
+                    Quản lý check-in hành khách
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleRouteManagement}
+              >
+                <View style={styles.actionIcon}>
+                  <Ionicons name="settings-outline" size={24} color="#FF9800" />
+                </View>
+                <View style={styles.actionInfo}>
+                  <Text style={styles.actionTitle}>Quản lý tuyến</Text>
+                  <Text style={styles.actionDescription}>
+                    Cập nhật trạng thái tuyến đường
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -342,6 +448,77 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
+    fontSize: 14,
+    color: "#666",
+  },
+  // Bottom Sheet Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalBackground: {
+    flex: 1,
+  },
+  bottomSheet: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    minHeight: 250,
+  },
+  bottomSheetHeader: {
+    alignItems: "center",
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  bottomSheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#ccc",
+    borderRadius: 2,
+    marginBottom: 15,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  bottomSheetSubtitle: {
+    fontSize: 14,
+    color: "#666",
+  },
+  bottomSheetContent: {
+    padding: 20,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: "#f8f9fa",
+    marginBottom: 12,
+  },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  actionInfo: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 2,
+  },
+  actionDescription: {
     fontSize: 14,
     color: "#666",
   },
