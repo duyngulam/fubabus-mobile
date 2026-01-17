@@ -8,6 +8,15 @@ export interface LoginRequest {
   password: string;
 }
 
+// Register request matching backend DTO
+export interface RegisterRequest {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  confirmPassword: string;
+}
+
 // Login response from backend
 export interface LoginResponse {
   success: boolean;
@@ -22,9 +31,6 @@ export interface LoginResponse {
     refreshToken: string;
   };
   timestamp: string;
-
-
-
 }
 
 // User object
