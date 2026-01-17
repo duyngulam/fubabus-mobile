@@ -3,16 +3,10 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Redirect, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
-
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthProvider } from "./context/AuthContext";
-
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
+import AuthNavigator from "./AuthNavigator";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -20,14 +14,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
-          {/* <Stack.Screen name="today-trip" options={{  presentation: "",title: 'Oops!' }} /> */}
-        </Stack>
+        <AuthNavigator />
       </AuthProvider>
       <StatusBar style="auto" />
     </ThemeProvider>
