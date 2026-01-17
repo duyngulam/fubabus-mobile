@@ -10,10 +10,21 @@ export interface LoginRequest {
 
 // Login response from backend
 export interface LoginResponse {
-  token: string;
-  user: User;
-  refreshToken?: string;
-  expiresIn?: number;
+  success: boolean;
+  message: string;
+  data: {
+    accessToken: string;
+    tokenType: string;
+    userId: number;
+    email: string;
+    fullName: string;
+    role: string;
+    refreshToken: string;
+  };
+  timestamp: string;
+
+
+
 }
 
 // User object

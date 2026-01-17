@@ -1,107 +1,525 @@
-import { Image } from 'expo-image';
-import React, { useEffect } from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  FlatList,
+  Modal,
+  Alert,
+} from "react-native";
+import { router } from "expo-router";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link, useRouter } from 'expo-router';
-import { useAuth } from '../hooks/useAuth';
+import TripItem from "@/components/trip/TripItem";
+import { getTodayTrips } from "../services/tripService";
+import { Trip } from "../types/trip";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Colors } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 
-export default function HomeScreen() {
-  const { userToken, isLoading } = useAuth();
-  const router = useRouter();
+export default function TripTodayScreen() {
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<"today" | "week">("today");
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
 
-  // Redirect to sign in if not authenticated
+  // Generate calendar data for the current month
+  const generateCalendarDays = () => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    // Get first day of month and calculate days
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+
+    const days = [];
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({
+        date: new Date(currentYear, currentMonth, i),
+        day: i,
+        isToday:
+          i === today.getDate() &&
+          currentMonth === today.getMonth() &&
+          currentYear === today.getFullYear(),
+      });
+    }
+    return days;
+  };
+
+  const [calendarDays] = useState(generateCalendarDays());
+
   useEffect(() => {
-    if (!isLoading && !userToken) router.replace('/SignIn');
-  }, [isLoading, userToken]);
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    getTodayTrips().then(setTrips);
+  }, []);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const onSelectTrip = (trip: Trip) => {
+    setSelectedTrip(trip);
+    setIsBottomSheetVisible(true);
+  };
+
+  const handleTripCheckIn = () => {
+    console.log("trip selected:", selectedTrip?.status);
+    if (!selectedTrip) {
+      console.log("no trip selected");
+      return;
+    }
+
+    if (
+      selectedTrip.status !== "WAITING" &&
+      selectedTrip.status !== "RUNNING"
+    ) {
+      Alert.alert(
+        "Thông báo",
+        "Chỉ có thể check-in cho chuyến đang chờ hoặc đang chạy"
+      );
+      return;
+    }
+    console.log("trip selected:", selectedTrip.id);
+
+    setIsBottomSheetVisible(false);
+    router.push({
+      pathname: "/trip-check-in",
+      params: { tripId: selectedTrip.id },
+    });
+  };
+
+  const handleRouteManagement = () => {
+    if (!selectedTrip) return;
+
+    setIsBottomSheetVisible(false);
+    router.push({
+      pathname: "/route-management",
+      params: { tripId: selectedTrip.id },
+    });
+  };
+
+  const closeBottomSheet = () => {
+    setIsBottomSheetVisible(false);
+    setSelectedTrip(null);
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("vi-VN", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const getTripStats = () => {
+    const completedTrips = trips.filter((t) => t.status === "COMPLETED").length;
+    const totalTrips = trips.length;
+    return { completed: completedTrips, total: totalTrips };
+  };
+
+  const renderCalendarDay = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={[
+        styles.calendarDay,
+        item.isToday && styles.selectedDay,
+        selectedDate.getDate() === item.day && styles.selectedDay,
+      ]}
+      onPress={() => setSelectedDate(item.date)}
+    >
+      <Text
+        style={[
+          styles.dayText,
+          (item.isToday || selectedDate.getDate() === item.day) &&
+            styles.selectedDayText,
+        ]}
+      >
+        {item.day}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const stats = getTripStats();
+
+  return (
+    <ThemedView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, viewMode === "today" && styles.activeTab]}
+            onPress={() => setViewMode("today")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                viewMode === "today" && styles.activeTabText,
+              ]}
+            >
+              Hôm nay
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, viewMode === "week" && styles.activeTab]}
+            onPress={() => setViewMode("week")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                viewMode === "week" && styles.activeTabText,
+              ]}
+            >
+              Tuần này
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Calendar Section */}
+        {viewMode === "week" && (
+          <View style={styles.calendarSection}>
+            <Text style={styles.monthText}>Tháng 5/2025</Text>
+            <View style={styles.weekDays}>
+              {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((day, index) => (
+                <Text key={index} style={styles.weekDayText}>
+                  {day}
+                </Text>
+              ))}
+            </View>
+            <FlatList
+              data={calendarDays.slice(0, 14)} // Show 2 weeks
+              numColumns={7}
+              renderItem={renderCalendarDay}
+              keyExtractor={(item) => item.day.toString()}
+              scrollEnabled={false}
+            />
+            <Text style={styles.selectedDateText}>
+              {formatDate(selectedDate)}
+            </Text>
+          </View>
+        )}
+
+        {/* Trip List Section */}
+        <View style={styles.tripSection}>
+          {trips.map((trip) => (
+            <TripItem
+              key={trip.id}
+              trip={trip}
+              onPress={() => onSelectTrip(trip)}
+            />
+          ))}
+        </View>
+
+        {/* Stats Section */}
+        <View style={styles.statsSection}>
+          <ThemedText style={styles.statsTitle}>Tổng kết hôm nay</ThemedText>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{stats.completed}</Text>
+              <Text style={styles.statLabel}>Chuyến đi</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumberSecondary}>{stats.total}</Text>
+              <Text style={styles.statLabel}>Giờ làm việc</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Bottom Sheet Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isBottomSheetVisible}
+        onRequestClose={closeBottomSheet}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackground}
+            onPress={closeBottomSheet}
+          />
+          <View style={styles.bottomSheet}>
+            <View style={styles.bottomSheetHeader}>
+              <View style={styles.bottomSheetHandle} />
+              <ThemedText style={styles.bottomSheetTitle}>
+                Chọn hành động
+              </ThemedText>
+              <ThemedText style={styles.bottomSheetSubtitle}>
+                {selectedTrip?.routeName}
+              </ThemedText>
+            </View>
+
+            <View style={styles.bottomSheetContent}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleTripCheckIn}
+              >
+                <View style={styles.actionIcon}>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={24}
+                    color="#4CAF50"
+                  />
+                </View>
+                <View style={styles.actionInfo}>
+                  <Text style={styles.actionTitle}>Trip Check-in</Text>
+                  <Text style={styles.actionDescription}>
+                    Quản lý check-in hành khách
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleRouteManagement}
+              >
+                <View style={styles.actionIcon}>
+                  <Ionicons name="settings-outline" size={24} color="#FF9800" />
+                </View>
+                <View style={styles.actionInfo}>
+                  <Text style={styles.actionTitle}>Quản lý tuyến</Text>
+                  <Text style={styles.actionDescription}>
+                    Cập nhật trạng thái tuyến đường
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
   },
-  stepContainer: {
-    gap: 8,
+  header: {
+    backgroundColor: "#D83E3E",
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  headerTitle: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 8,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderRadius: 6,
+  },
+  activeTab: {
+    backgroundColor: "white",
+  },
+  tabText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  activeTabText: {
+    color: "#D83E3E",
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  calendarSection: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  monthText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 16,
+    color: "#333",
+  },
+  weekDays: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  weekDayText: {
+    width: 40,
+    textAlign: "center",
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "500",
+  },
+  calendarDay: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    margin: 2,
+    borderRadius: 20,
+  },
+  selectedDay: {
+    backgroundColor: "#D83E3E",
+  },
+  dayText: {
+    fontSize: 14,
+    color: "#333",
+  },
+  selectedDayText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  selectedDateText: {
+    textAlign: "center",
+    marginTop: 16,
+    fontSize: 14,
+    color: "#666",
+  },
+  tripSection: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    marginVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statsSection: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 20,
+    marginVertical: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statsTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 16,
+    color: "#333",
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: "#eee",
+    marginHorizontal: 20,
+  },
+  statNumber: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#D83E3E",
+    marginBottom: 4,
+  },
+  statNumberSecondary: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#666",
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: "#666",
+  },
+  // Bottom Sheet Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalBackground: {
+    flex: 1,
+  },
+  bottomSheet: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    minHeight: 250,
+  },
+  bottomSheetHeader: {
+    alignItems: "center",
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  bottomSheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#ccc",
+    borderRadius: 2,
+    marginBottom: 15,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  bottomSheetSubtitle: {
+    fontSize: 14,
+    color: "#666",
+  },
+  bottomSheetContent: {
+    padding: 20,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: "#f8f9fa",
+    marginBottom: 12,
+  },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  actionInfo: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 2,
+  },
+  actionDescription: {
+    fontSize: 14,
+    color: "#666",
   },
 });

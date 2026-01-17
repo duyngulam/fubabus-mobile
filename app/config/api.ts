@@ -6,7 +6,8 @@
 // Base API URL - change this for different environments
 export const API_BASE_URL = 'http://localhost:5230';
 
-// API Endpoints
+// API Endpointsr
+
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
@@ -14,10 +15,16 @@ export const API_ENDPOINTS = {
     LOGOUT: '/auth/logout',
     REFRESH: '/auth/refresh',
   },
-  // Add more endpoint groups as needed
+
   USER: {
-    PROFILE: '/user/profile',
-    UPDATE: '/user/update',
+    // Profile
+    PROFILE: '/users/profile',                 // GET
+    UPDATE_PROFILE: '/users/profile',           // PUT
+    CHANGE_PASSWORD: '/users/profile/password', // PUT
+
+    // Avatar
+    UPLOAD_AVATAR: '/users/profile/avatar',     // POST (multipart)
+    DELETE_AVATAR: '/users/profile/avatar',     // DELETE
   },
   // Example: TRIP, TICKET, etc.
 } as const;
