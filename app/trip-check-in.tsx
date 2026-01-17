@@ -6,9 +6,11 @@ import {
   View,
   TouchableOpacity,
   Text,
+  ActivityIndicator,
 } from "react-native";
 import { Passenger } from "./types/passenger";
-import { getPassengersByTrip } from "./services/passengerService";
+import { getPassengersOnTrip } from "./services/passengerService";
+import { useTrip } from "./hooks/useTrip";
 import PassengerItem from "@/components/PassengerItem";
 import TripInfoCard from "@/components/TripInfoCard";
 import { ThemedText } from "@/components/themed-text";
@@ -22,20 +24,29 @@ const COLORS = {
 export default function TripCheckInScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const [passengers, setPassengers] = useState<Passenger[]>([]);
+  const { trips } = useTrip();
 
-  // Mock trip data - replace with actual data fetching
-  const tripInfo = {
-    from: "TP. Hồ Chí Minh",
-    to: "Đà Lạt",
-    date: "05/12/2025",
-    time: "08:00",
-    totalPassengers: 24,
-  };
+  // Find current trip from trips list
+  const currentTrip = trips.find((trip) => trip.tripId.toString() === tripId);
 
   useEffect(() => {
-    if (tripId) {
-      getPassengersByTrip(tripId).then(setPassengers);
-    }
+    const fetchPassengers = async () => {
+      if (tripId) {
+        try {
+          const response = await getPassengersOnTrip(
+            parseInt(tripId),
+            "mock-token"
+          ); // Replace with actual token
+          if (response.success) {
+            setPassengers(response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching passengers:", error);
+        }
+      }
+    };
+
+    fetchPassengers();
   }, [tripId]);
 
   const toggleCheckIn = (id: string) => {
@@ -47,10 +58,37 @@ export default function TripCheckInScreen() {
   const checkedCount = passengers.filter((p) => p.checkedIn).length;
   const waitingCount = passengers.length - checkedCount;
 
+  // Create trip info from current trip data
+  const tripInfo = currentTrip
+    ? {
+        from: currentTrip.originName,
+        to: currentTrip.destinationName,
+        date: currentTrip.date,
+        time: currentTrip.departureTime
+          ? new Date(currentTrip.departureTime).toLocaleTimeString("vi-VN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "08:00",
+        totalPassengers: currentTrip.totalSeats,
+      }
+    : null;
+
+  if (!currentTrip) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#D83E3E" />
+          <Text style={styles.loadingText}>Đang tải thông tin chuyến...</Text>
+        </View>
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       <TripInfoCard
-        trip={tripInfo}
+        trip={tripInfo!}
         checkedInCount={checkedCount}
         waitingCount={waitingCount}
       />
@@ -124,5 +162,16 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
 });

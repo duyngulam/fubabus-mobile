@@ -1,25 +1,26 @@
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
+import { APIResponse } from '../types';
 import { Passenger } from '../types/passenger';
 
-export const getPassengersByTrip = async (
-  tripId: string
-): Promise<Passenger[]> => {
-  return Promise.resolve([
+
+export const getPassengersOnTrip = async (
+  tripId: number,
+  token: string
+): Promise<APIResponse<Passenger[]>> => {
+  const response = await fetch(
+    `${API_BASE_URL}${API_ENDPOINTS.TRIP.PASSENGERS_ON_TRIP(tripId)}`,
     {
-      id: 'p1',
-      name: 'Nguyễn Văn An',
-      seatNumber: 'A1',
-      phone: '0901234567',
-      pickupPoint: 'Bến xe Miền Đông',
-      checkedIn: true,
-    },
-    {
-      id: 'p2',
-      name: 'Trần Thị Bình',
-      seatNumber: 'A2',
-      phone: '0909876543',
-      pickupPoint: 'Bến xe Miền Đông',
-      checkedIn: false,
-    },
-  ]);
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch passengers on trip');
+  }
+
+  return response.json();
 };

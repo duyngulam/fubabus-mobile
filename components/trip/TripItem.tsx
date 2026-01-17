@@ -65,7 +65,7 @@ export default function TripItem({
     <Pressable
       style={styles.container}
       onPress={() => {
-        console.log("TripItem clicked:", trip.id); // Add debug log
+        console.log("TripItem clicked:", trip.tripId); // Use tripId
         onPress();
       }}
     >
@@ -104,7 +104,14 @@ export default function TripItem({
             <Ionicons name="time-outline" size={16} color="#666" />
             <View style={styles.timeInfo}>
               <Text style={styles.timeLabel}>Giờ xuất bến</Text>
-              <Text style={styles.timeValue}>{trip.startTime}</Text>
+              <Text style={styles.timeValue}>
+                {trip.departureTime
+                  ? new Date(trip.departureTime).toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "08:00"}
+              </Text>
             </View>
           </View>
 
@@ -112,8 +119,42 @@ export default function TripItem({
             <Ionicons name="time-outline" size={16} color="#666" />
             <View style={styles.timeInfo}>
               <Text style={styles.timeLabel}>Giờ đến</Text>
-              <Text style={styles.timeValue}>{trip.endTime}</Text>
+              <Text style={styles.timeValue}>
+                {trip.arrivalTime
+                  ? new Date(trip.arrivalTime).toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "17:00"}
+              </Text>
             </View>
+          </View>
+        </View>
+
+        {/* Route Information */}
+        <View style={styles.routeDetail}>
+          <View style={styles.routePoint}>
+            <View style={styles.routeDot} />
+            <Text style={styles.routeLocation}>{trip.originName}</Text>
+          </View>
+          <View style={styles.routeLine} />
+          <View style={styles.routePoint}>
+            <View style={styles.routeDot} />
+            <Text style={styles.routeLocation}>{trip.destinationName}</Text>
+          </View>
+        </View>
+
+        {/* Seat Information */}
+        <View style={styles.seatContainer}>
+          <View style={styles.seatInfo}>
+            <Ionicons name="people-outline" size={16} color="#666" />
+            <Text style={styles.seatText}>
+              {trip.checkedInSeats}/{trip.totalSeats} hành khách
+            </Text>
+          </View>
+          <View style={styles.seatInfo}>
+            <Ionicons name="ticket-outline" size={16} color="#666" />
+            <Text style={styles.seatText}>{trip.bookedSeats} đã đặt</Text>
           </View>
         </View>
 
@@ -121,7 +162,7 @@ export default function TripItem({
         <View style={styles.vehicleContainer}>
           <Ionicons name="bus-outline" size={16} color="#666" />
           <Text style={styles.vehicleText}>
-            Xe {trip.busPlate || "51B-12345"}
+            {trip.licensePlate} - {trip.vehicleTypeName}
           </Text>
           <View style={styles.spacer} />
           <Ionicons name="chevron-forward" size={16} color="#ccc" />
@@ -215,5 +256,50 @@ const styles = StyleSheet.create({
   },
   spacer: {
     flex: 1,
+  },
+  // Route detail styles
+  routeDetail: {
+    marginBottom: 16,
+  },
+  routePoint: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 4,
+  },
+  routeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#D83E3E",
+    marginRight: 12,
+  },
+  routeLocation: {
+    fontSize: 14,
+    color: "#333",
+    flex: 1,
+  },
+  routeLine: {
+    width: 2,
+    height: 20,
+    backgroundColor: "#E0E0E0",
+    marginLeft: 3,
+    marginRight: 12,
+  },
+  // Seat information styles
+  seatContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  seatInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  seatText: {
+    fontSize: 12,
+    color: "#666",
+    marginLeft: 6,
   },
 });

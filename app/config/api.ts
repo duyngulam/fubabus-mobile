@@ -26,6 +26,16 @@ export const API_ENDPOINTS = {
     UPLOAD_AVATAR: '/users/profile/avatar',     // POST (multipart)
     DELETE_AVATAR: '/users/profile/avatar',     // DELETE
   },
+
+  TRIP: {
+    DRIVER_TRIPS: (driverId: number) => `/trips/driver/${driverId}`,
+    PASSENGERS_ON_TRIP: (tripId: number) => `/trips/${tripId}/passengers`,
+    COMPLETE_TRIP: (tripId: number) => `/trips/${tripId}/complete`,
+  },
+
+  TICKET: {
+    DETAIL: (ticketId: number) => `/tickets/${ticketId}`,
+  },
   // Example: TRIP, TICKET, etc.
 } as const;
 

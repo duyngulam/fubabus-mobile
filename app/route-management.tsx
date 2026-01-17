@@ -9,16 +9,22 @@ import {
   Modal,
   FlatList,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Ionicons } from "@expo/vector-icons";
 import { Trip, TripStatus } from "./types/trip";
+import { useTrip } from "./hooks/useTrip";
 
 export default function RouteManagementScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
-  const [trip, setTrip] = useState<Trip | null>(null);
+  const { trips, completeTripAction } = useTrip();
+
+  // Find current trip from trips list
+  const trip = trips.find((t) => t.tripId.toString() === tripId);
+
   const [selectedStatus, setSelectedStatus] = useState<TripStatus>("WAITING");
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
@@ -33,23 +39,12 @@ export default function RouteManagementScreen() {
     notes: "",
   });
 
-  // Mock trip data - replace with actual API call
+  // Initialize selected status when trip is loaded
   useEffect(() => {
-    // Simulate fetching trip data
-    const mockTrip: Trip = {
-      id: tripId || "1",
-      routeName: "TP. HCM → Đà Lạt",
-      from: "TP. Hồ Chí Minh",
-      to: "Đà Lạt",
-      date: "2025-05-12",
-      startTime: "08:00",
-      endTime: "14:30",
-      status: "WAITING",
-      busPlate: "51B-12345",
-    };
-    setTrip(mockTrip);
-    setSelectedStatus(mockTrip.status);
-  }, [tripId]);
+    if (trip) {
+      setSelectedStatus(trip.status);
+    }
+  }, [trip]);
 
   const statusOptions = [
     { label: "Đang chờ", value: "WAITING" as TripStatus },
@@ -98,15 +93,26 @@ export default function RouteManagementScreen() {
 
     setIsLoading(true);
     try {
-      // Simulate API call to update trip status
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (selectedStatus === "COMPLETED") {
+        // Use the completeTripAction from hook
+        const success = await completeTripAction(trip.tripId, {
+          actualEndTime: new Date().toISOString(),
+          note: costInfo.notes,
+        });
 
-      const updatedTrip = { ...trip, status: selectedStatus };
-      setTrip(updatedTrip);
-
-      Alert.alert("Thành công", "Cập nhật trạng thái tuyến thành công!", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+        if (success) {
+          Alert.alert("Thành công", "Hoàn thành chuyến đi thành công!", [
+            { text: "OK", onPress: () => router.back() },
+          ]);
+        } else {
+          Alert.alert("Lỗi", "Có lỗi xảy ra khi hoàn thành chuyến đi");
+        }
+      } else {
+        // For other status updates, implement API call here
+        Alert.alert("Thành công", "Cập nhật trạng thái tuyến thành công!", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      }
     } catch (error) {
       Alert.alert("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái");
     } finally {
@@ -127,7 +133,10 @@ export default function RouteManagementScreen() {
   if (!trip) {
     return (
       <ThemedView style={styles.container}>
-        <ThemedText>Đang tải...</ThemedText>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#D83E3E" />
+          <Text style={styles.loadingText}>Đang tải thông tin chuyến...</Text>
+        </View>
       </ThemedView>
     );
   }
@@ -174,7 +183,19 @@ export default function RouteManagementScreen() {
             <View style={styles.detailRow}>
               <Ionicons name="time-outline" size={16} color="#666" />
               <Text style={styles.detailText}>
-                {trip.startTime} - {trip.endTime}
+                {trip.departureTime
+                  ? new Date(trip.departureTime).toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "08:00"}{" "}
+                -{" "}
+                {trip.arrivalTime
+                  ? new Date(trip.arrivalTime).toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "17:00"}
               </Text>
             </View>
             <View style={styles.detailRow}>
@@ -183,7 +204,16 @@ export default function RouteManagementScreen() {
             </View>
             <View style={styles.detailRow}>
               <Ionicons name="bus-outline" size={16} color="#666" />
-              <Text style={styles.detailText}>Xe {trip.busPlate}</Text>
+              <Text style={styles.detailText}>
+                {trip.licensePlate} - {trip.vehicleTypeName}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="people-outline" size={16} color="#666" />
+              <Text style={styles.detailText}>
+                {trip.checkedInSeats}/{trip.totalSeats} hành khách -{" "}
+                {trip.bookedSeats} đã đặt
+              </Text>
             </View>
           </View>
         </View>
@@ -756,5 +786,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
     minHeight: 80,
     textAlignVertical: "top",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
 });

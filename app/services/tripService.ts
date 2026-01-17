@@ -1,28 +1,67 @@
-import { Trip } from '../types/trip';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
+import { APIResponse, PageResponse } from '../types';
+import { ApiTrip, CompleteTripRequest } from '../types/trip';
 
-export const getTodayTrips = async (): Promise<Trip[]> => {
-  return Promise.resolve([
+
+
+interface GetDriverTripsParams {
+  driverId: number;
+  token: string;
+  status?: string;
+  page?: number;
+  size?: number;
+}
+
+export const getDriverTrips = async ({
+  driverId,
+  token,
+  status,
+  page = 0,
+  size = 10,
+}: GetDriverTripsParams): Promise<APIResponse<PageResponse<ApiTrip>>> => {
+  const params = new URLSearchParams();
+  params.append('page', page.toString());
+  params.append('size', size.toString());
+  if (status) params.append('status', status);
+
+  const response = await fetch(
+    `${API_BASE_URL}${API_ENDPOINTS.TRIP.DRIVER_TRIPS(driverId)}?${params.toString()}`,
     {
-      id: '1',
-      routeName: 'TP.HCM → Đà Lạt',
-      from: 'TP.HCM',
-      to: 'Đà Lạt',
-      date: '2025-12-05',
-      startTime: '08:00',
-      endTime: '14:30',
-      status: 'WAITING',
-      busPlate: '51B-12345',
-    },
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch driver trips');
+  }
+
+  return response.json();
+};
+
+export const completeTrip = async (
+  tripId: number,
+  data: CompleteTripRequest,
+  token: string
+): Promise<APIResponse<void>> => {
+  const response = await fetch(
+    `${API_BASE_URL}${API_ENDPOINTS.TRIP.COMPLETE_TRIP(tripId)}`,
     {
-      id: '2',
-      routeName: 'Đà Lạt → TP.HCM',
-      from: 'Đà Lạt',
-      to: 'TP.HCM',
-      date: '2025-12-05',
-      startTime: '16:00',
-      endTime: '22:30',
-      status: 'WAITING',
-      busPlate: '51B-12345',
-    },
-  ]);
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to complete trip');
+  }
+
+  return response.json();
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   FlatList,
   Modal,
   Alert,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 
 import TripItem from "@/components/trip/TripItem";
-import { getTodayTrips } from "../services/tripService";
+import { useTrip } from "../hooks/useTrip";
 import { Trip } from "../types/trip";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -20,7 +22,21 @@ import { Colors } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function TripTodayScreen() {
-  const [trips, setTrips] = useState<Trip[]>([]);
+  // Use trip hook
+  const {
+    trips,
+    loading,
+    error,
+    refreshing,
+    refreshTrips,
+    getStatistics,
+    selectedDate: hookSelectedDate,
+    updateDateFilter,
+  } = useTrip();
+
+  console.log(trips);
+
+  // Local state for UI
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"today" | "week">("today");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -53,9 +69,13 @@ export default function TripTodayScreen() {
 
   const [calendarDays] = useState(generateCalendarDays());
 
-  useEffect(() => {
-    getTodayTrips().then(setTrips);
-  }, []);
+  // Handle date change
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+    // Update hook date filter if needed
+    const dateString = date.toISOString().split("T")[0];
+    updateDateFilter(dateString);
+  };
 
   const onSelectTrip = (trip: Trip) => {
     setSelectedTrip(trip);
@@ -63,14 +83,14 @@ export default function TripTodayScreen() {
   };
 
   const handleTripCheckIn = () => {
-    console.log("trip selected:", selectedTrip?.status);
     if (!selectedTrip) {
       console.log("no trip selected");
       return;
     }
+    console.log("selectedTrip status:", selectedTrip.status);
 
     if (
-      selectedTrip.status !== "WAITING" &&
+      selectedTrip.status !== "Waiting" &&
       selectedTrip.status !== "RUNNING"
     ) {
       Alert.alert(
@@ -79,12 +99,12 @@ export default function TripTodayScreen() {
       );
       return;
     }
-    console.log("trip selected:", selectedTrip.id);
+    console.log("trip selected:", selectedTrip.tripId);
 
     setIsBottomSheetVisible(false);
     router.push({
       pathname: "/trip-check-in",
-      params: { tripId: selectedTrip.id },
+      params: { tripId: selectedTrip.tripId.toString() },
     });
   };
 
@@ -94,7 +114,7 @@ export default function TripTodayScreen() {
     setIsBottomSheetVisible(false);
     router.push({
       pathname: "/route-management",
-      params: { tripId: selectedTrip.id },
+      params: { tripId: selectedTrip.tripId.toString() },
     });
   };
 
@@ -113,9 +133,7 @@ export default function TripTodayScreen() {
   };
 
   const getTripStats = () => {
-    const completedTrips = trips.filter((t) => t.status === "COMPLETED").length;
-    const totalTrips = trips.length;
-    return { completed: completedTrips, total: totalTrips };
+    return getStatistics();
   };
 
   const renderCalendarDay = ({ item }: { item: any }) => (
@@ -125,7 +143,7 @@ export default function TripTodayScreen() {
         item.isToday && styles.selectedDay,
         selectedDate.getDate() === item.day && styles.selectedDay,
       ]}
-      onPress={() => setSelectedDate(item.date)}
+      onPress={() => handleDateChange(item.date)}
     >
       <Text
         style={[
@@ -175,7 +193,18 @@ export default function TripTodayScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshTrips}
+            tintColor="#D83E3E"
+            colors={["#D83E3E"]}
+          />
+        }
+      >
         {/* Calendar Section */}
         {viewMode === "week" && (
           <View style={styles.calendarSection}>
@@ -202,13 +231,36 @@ export default function TripTodayScreen() {
 
         {/* Trip List Section */}
         <View style={styles.tripSection}>
-          {trips.map((trip) => (
-            <TripItem
-              key={trip.id}
-              trip={trip}
-              onPress={() => onSelectTrip(trip)}
-            />
-          ))}
+          {loading && trips.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#D83E3E" />
+              <Text style={styles.loadingText}>Đang tải chuyến đi...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle-outline" size={48} color="#FF5722" />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={refreshTrips}
+              >
+                <Text style={styles.retryButtonText}>Thử lại</Text>
+              </TouchableOpacity>
+            </View>
+          ) : trips.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="bus-outline" size={48} color="#ccc" />
+              <Text style={styles.emptyText}>Không có chuyến đi nào</Text>
+            </View>
+          ) : (
+            trips.map((trip) => (
+              <TripItem
+                key={trip.tripId}
+                trip={trip}
+                onPress={() => onSelectTrip(trip)}
+              />
+            ))
+          )}
         </View>
 
         {/* Stats Section */}
@@ -521,5 +573,49 @@ const styles = StyleSheet.create({
   actionDescription: {
     fontSize: 14,
     color: "#666",
+  },
+  // Loading, Error, Empty States
+  loadingContainer: {
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
+  },
+  errorContainer: {
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#FF5722",
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: "#D83E3E",
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#999",
   },
 });
