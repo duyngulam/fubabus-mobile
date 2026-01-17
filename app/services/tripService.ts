@@ -1,6 +1,6 @@
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { APIResponse, PageResponse } from '../types';
-import { ApiTrip, CompleteTripRequest } from '../types/trip';
+import { CompleteTripRequest, Trip } from '../types/trip';
 
 
 
@@ -18,7 +18,7 @@ export const getDriverTrips = async ({
   status,
   page = 0,
   size = 10,
-}: GetDriverTripsParams): Promise<APIResponse<PageResponse<ApiTrip>>> => {
+}: GetDriverTripsParams): Promise<APIResponse<PageResponse<Trip>>> => {
   const params = new URLSearchParams();
   params.append('page', page.toString());
   params.append('size', size.toString());

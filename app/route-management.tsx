@@ -25,7 +25,7 @@ export default function RouteManagementScreen() {
   // Find current trip from trips list
   const trip = trips.find((t) => t.tripId.toString() === tripId);
 
-  const [selectedStatus, setSelectedStatus] = useState<TripStatus>("WAITING");
+  const [selectedStatus, setSelectedStatus] = useState<TripStatus>("Waiting");
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 
@@ -56,7 +56,7 @@ export default function RouteManagementScreen() {
 
   const getStatusColor = (status: TripStatus) => {
     switch (status) {
-      case "WAITING":
+      case "Waiting":
         return "#FFF3E0";
       case "RUNNING":
         return "#E3F2FD";
@@ -73,7 +73,7 @@ export default function RouteManagementScreen() {
 
   const getStatusTextColor = (status: TripStatus) => {
     switch (status) {
-      case "WAITING":
+      case "Waiting":
         return "#F57C00";
       case "RUNNING":
         return "#1976D2";
