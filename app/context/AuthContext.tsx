@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userToken, setUserToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -48,12 +48,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Call real API
       const response = await login({ emailOrPhone, password });
       
+      // Validate response
+      if (!response || !response.token) {
+        throw { message: 'Invalid server response: missing token' } as ApiError;
+      }
+
       setUserToken(response.token);
-      setUser(response.user);
-      
+      setUser(response.user ?? null);
+
       if (remember) {
-        await AsyncStorage.setItem('userToken', response.token);
-        await AsyncStorage.setItem('user', JSON.stringify(response.user));
+        try {
+          // Ensure we're only storing strings
+          const tokenToStore = String(response.token);
+          await AsyncStorage.setItem('userToken', tokenToStore);
+          if (response.user != null) {
+            await AsyncStorage.setItem('user', JSON.stringify(response.user));
+          } else {
+            await AsyncStorage.removeItem('user');
+          }
+        } catch (storageErr) {
+          console.warn('AsyncStorage set failed', { storageErr, response });
+        }
       } else {
         await AsyncStorage.removeItem('userToken');
         await AsyncStorage.removeItem('user');
