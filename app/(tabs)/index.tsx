@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import TripItem from "@/components/trip/TripItem";
 import WeekCalendar from "@/components/WeekCalendar";
+import { TripControlExample } from "../components/TripControlExample";
 import { useTrip } from "../hooks/useTrip";
 import { Trip } from "../types/trip";
 import { ThemedText } from "@/components/themed-text";
@@ -78,7 +79,7 @@ export default function TripTodayScreen() {
 
     if (
       selectedTrip.status !== "Waiting" &&
-      selectedTrip.status !== "RUNNING"
+      selectedTrip.status !== "Running"
     ) {
       Alert.alert(
         "Thông báo",
@@ -175,6 +176,9 @@ export default function TripTodayScreen() {
             ))
           )}
         </View>
+
+        {/* GPS TRACKING DEMO */}
+        <TripControlExample />
       </ScrollView>
 
       {/* BOTTOM SHEET */}

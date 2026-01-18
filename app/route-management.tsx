@@ -18,12 +18,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { Trip, TripStatus, TripDetailedResponseDTO } from "./types/trip";
 import { useTrip } from "./hooks/useTrip";
 import { useAuth } from "./hooks/useAuth";
+import { useTripManager } from "./hooks/useTripManager";
 
 export default function RouteManagementScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const { completeTripAction, getTripByIdAction, updateTripStatusAction } =
     useTrip();
   const { userID } = useAuth();
+  const { updateTripStatus: updateActiveTripStatus, startTripTracking } =
+    useTripManager();
 
   // Trip state
   const [trip, setTrip] = useState<TripDetailedResponseDTO | null>(null);
@@ -136,6 +139,8 @@ export default function RouteManagementScreen() {
           const updatedTrip = await getTripByIdAction(parseInt(tripId!));
           if (updatedTrip) {
             setTrip(updatedTrip);
+            // Update active trip status for GPS tracking
+            updateActiveTripStatus(updatedTrip);
           }
 
           // Clear cost info after successful completion
@@ -167,6 +172,16 @@ export default function RouteManagementScreen() {
           const updatedTrip = await getTripByIdAction(parseInt(tripId!));
           if (updatedTrip) {
             setTrip(updatedTrip);
+            // Update active trip status for GPS tracking
+            updateActiveTripStatus(updatedTrip);
+
+            // Start GPS tracking if trip is now running
+            if (
+              updatedTrip.status === "RUNNING" ||
+              updatedTrip.status === "Running"
+            ) {
+              await startTripTracking(updatedTrip.tripId);
+            }
           }
 
           // Clear status note after successful update

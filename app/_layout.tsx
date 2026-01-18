@@ -6,6 +6,8 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthProvider } from "./context/AuthContext";
+import { TripProvider } from "./context/TripContext";
+import { TripGPSManager } from "./components/TripGPSManager";
 import AuthNavigator from "./AuthNavigator";
 
 export default function RootLayout() {
@@ -14,7 +16,10 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        <AuthNavigator />
+        <TripProvider>
+          <TripGPSManager />
+          <AuthNavigator />
+        </TripProvider>
       </AuthProvider>
       <StatusBar style="auto" />
     </ThemeProvider>
