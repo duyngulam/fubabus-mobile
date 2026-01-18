@@ -6,7 +6,7 @@ export type TripStatus =
   | 'CANCELLED';
 
 export interface Trip {
-
+  driverId: string; // Driver ID for API calls
   arrivalTime?: string; // ISO string
   departureTime?: string; // ISO string
   actualEndTime?: string; // ISO string
@@ -30,6 +30,7 @@ vehicleTypeName: string;
 }
 
 export interface CompleteTripRequest {
-  actualEndTime?: string; // ISO string
-  note?: string;
+  driverId: number;
+  completionNote?: string;
+  actualDistanceKm?: number;
 }

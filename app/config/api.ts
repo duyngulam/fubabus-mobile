@@ -4,7 +4,8 @@
  */
 
 // Base API URL - change this for different environments
-export const API_BASE_URL = "http://192.168.2.9:5230";
+// export const API_BASE_URL = "http://192.168.2.9:5230";
+export const API_BASE_URL = "http://192.168.1.20:5230";
 
 // API Endpointsr
 
@@ -31,6 +32,7 @@ export const API_ENDPOINTS = {
     DRIVER_TRIPS: (driverId: number) => `/trips/driver/${driverId}`,
     PASSENGERS_ON_TRIP: (tripId: number) => `/trips/${tripId}/passengers`,
     COMPLETE_TRIP: (tripId: number) => `/trips/${tripId}/complete`,
+    UPDATE_STATUS: (tripId: number) => `/trips/${tripId}/status`,
   },
 
   TICKET: {

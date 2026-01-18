@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
-
+import { getDriverTrips, completeTrip, updateTripStatus } from '../services/tripService';
 import { Trip, TripStatus, CompleteTripRequest } from '../types/trip';
 import { PageResponse } from '../types';
-import { completeTrip, getDriverTrips } from '../services/tripService';
-import * as tripService from '../services/tripService';
 
 
 export const useTrip = () => {
@@ -147,16 +145,26 @@ export const useTrip = () => {
     tripId: number, 
     data: CompleteTripRequest
   ): Promise<boolean> => {
-    if (!userToken) {
-      setError('Không có token xác thực');
+    if (!userToken || !userID) {
+      setError('Không có token xác thực hoặc thông tin tài xế');
       return false;
     }
 
+    console.log("complete trip called with tripId:",tripId,"and data:",data);
+    
     try {
       setLoading(true);
       setError(null);
 
-      const response = await completeTrip(tripId, data, userToken);
+      // Add driverId to the request data
+      const requestData = {
+        ...data,
+        driverId: userID
+      };
+      console.log("driverID",userID);
+      
+
+      const response = await completeTrip(tripId, requestData, userToken);
       
       if (response.success) {
         // Update local trip status
@@ -175,7 +183,44 @@ export const useTrip = () => {
     } finally {
       setLoading(false);
     }
-  }, [userToken]);
+  }, [userToken, userID]);
+
+  /**
+   * Update trip status
+   */
+  const updateTripStatusAction = useCallback(async (
+    tripId: number,
+    status: TripStatus
+  ): Promise<boolean> => {
+    if (!userToken || !userID) {
+      setError('Không có token xác thực hoặc thông tin tài xế');
+      return false;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await updateTripStatus(tripId, status, userToken, userID);
+      
+      if (response.success) {
+        // Update local trip status
+        setTrips(prev => prev.map(trip => 
+          trip.tripId === tripId 
+            ? { ...trip, status }
+            : trip
+        ));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không thể cập nhật trạng thái chuyến');
+      console.error('Update trip status error:', err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [userToken, userID]);
 
   /**
    * Get trips by status
@@ -229,6 +274,7 @@ export const useTrip = () => {
     updateStatusFilter,
     updateDateFilter,
     completeTripAction,
+    updateTripStatusAction,
     
     // Utilities
     getTripsByStatus,

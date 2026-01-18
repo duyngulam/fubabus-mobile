@@ -20,7 +20,7 @@ import { useTrip } from "./hooks/useTrip";
 
 export default function RouteManagementScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
-  const { trips, completeTripAction } = useTrip();
+  const { trips, completeTripAction, updateTripStatusAction } = useTrip();
 
   // Find current trip from trips list
   const trip = trips.find((t) => t.tripId.toString() === tripId);
@@ -37,6 +37,7 @@ export default function RouteManagementScreen() {
     driverAllowance: "",
     otherExpenses: "",
     notes: "",
+    actualDistanceKm: "", // Add actual distance for completion
   });
 
   // Initialize selected status when trip is loaded
@@ -89,15 +90,19 @@ export default function RouteManagementScreen() {
   };
 
   const handleStatusUpdate = async () => {
+    console.log("trip update", trip);
     if (!trip) return;
+
+    console.log("trip update", trip);
 
     setIsLoading(true);
     try {
       if (selectedStatus === "COMPLETED") {
-        // Use the completeTripAction from hook
+        // Use the completeTripAction from hook with new DTO structure
         const success = await completeTripAction(trip.tripId, {
-          actualEndTime: new Date().toISOString(),
-          note: costInfo.notes,
+          driverId: parseInt(trip.driverId), // Convert to number
+          completionNote: costInfo.notes,
+          actualDistanceKm: parseFloat(costInfo.actualDistanceKm) || 0,
         });
 
         if (success) {
@@ -108,10 +113,19 @@ export default function RouteManagementScreen() {
           Alert.alert("Lỗi", "Có lỗi xảy ra khi hoàn thành chuyến đi");
         }
       } else {
-        // For other status updates, implement API call here
-        Alert.alert("Thành công", "Cập nhật trạng thái tuyến thành công!", [
-          { text: "OK", onPress: () => router.back() },
-        ]);
+        // For other status updates, use updateTripStatusAction
+        const success = await updateTripStatusAction(
+          trip.tripId,
+          selectedStatus,
+        );
+
+        if (success) {
+          Alert.alert("Thành công", "Cập nhật trạng thái tuyến thành công!", [
+            { text: "OK", onPress: () => router.back() },
+          ]);
+        } else {
+          Alert.alert("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái");
+        }
       }
     } catch (error) {
       Alert.alert("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái");
@@ -407,6 +421,22 @@ export default function RouteManagementScreen() {
                   placeholderTextColor="#999"
                 />
                 <Text style={styles.costUnit}>VNĐ</Text>
+              </View>
+
+              {/* Actual Distance Field */}
+              <View style={styles.costRow}>
+                <Text style={styles.costLabel}>Khoảng cách thực tế</Text>
+                <TextInput
+                  style={styles.costInput}
+                  value={costInfo.actualDistanceKm}
+                  onChangeText={(text) =>
+                    setCostInfo((prev) => ({ ...prev, actualDistanceKm: text }))
+                  }
+                  placeholder="0"
+                  keyboardType="numeric"
+                  placeholderTextColor="#999"
+                />
+                <Text style={styles.costUnit}>km</Text>
               </View>
             </View>
 

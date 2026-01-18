@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   FlatList,
@@ -8,13 +8,15 @@ import {
   Text,
   ActivityIndicator,
 } from "react-native";
-import { Passenger } from "./types/passenger";
-import { getPassengersOnTrip } from "./services/passengerService";
+import { Passenger, PassengerOnTrip } from "./types/passenger";
+import { getPassengersOnTrip } from "./services/tripService";
 import { useTrip } from "./hooks/useTrip";
+import { useAuth } from "./hooks/useAuth";
 import PassengerItem from "@/components/PassengerItem";
 import TripInfoCard from "@/components/TripInfoCard";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { Ionicons } from "@expo/vector-icons";
 import * as Progress from "react-native-progress";
 
 const COLORS = {
@@ -24,21 +26,45 @@ const COLORS = {
 export default function TripCheckInScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const [passengers, setPassengers] = useState<Passenger[]>([]);
+  const [rawPassengerData, setRawPassengerData] = useState<PassengerOnTrip[]>(
+    [],
+  );
   const { trips } = useTrip();
+  const { userToken } = useAuth();
 
   // Find current trip from trips list
   const currentTrip = trips.find((trip) => trip.tripId.toString() === tripId);
 
+  // Convert PassengerOnTrip to legacy Passenger format for compatibility
+  const convertToLegacyFormat = (
+    passengerOnTrip: PassengerOnTrip,
+  ): Passenger => {
+    return {
+      id: passengerOnTrip.passenger.passengerId.toString(),
+      name: passengerOnTrip.passenger.fullName,
+      seatNumber: passengerOnTrip.seat.seatNumber,
+      phone: passengerOnTrip.passenger.phoneNumber,
+      pickupPoint:
+        passengerOnTrip.passenger.pickupLocationName || "Chưa xác định",
+      checkedIn: passengerOnTrip.checkin.checkinStatus === "Boarded",
+    };
+  };
+
   useEffect(() => {
     const fetchPassengers = async () => {
-      if (tripId) {
+      if (tripId && userToken) {
         try {
           const response = await getPassengersOnTrip(
             parseInt(tripId),
-            "mock-token"
-          ); // Replace with actual token
+            userToken,
+          );
           if (response.success) {
-            setPassengers(response.data);
+            setRawPassengerData(response.data);
+            // Convert to legacy format for existing UI components
+            const convertedPassengers = response.data.map(
+              convertToLegacyFormat,
+            );
+            setPassengers(convertedPassengers);
           }
         } catch (error) {
           console.error("Error fetching passengers:", error);
@@ -47,11 +73,11 @@ export default function TripCheckInScreen() {
     };
 
     fetchPassengers();
-  }, [tripId]);
+  }, [tripId, userToken]);
 
   const toggleCheckIn = (id: string) => {
     setPassengers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, checkedIn: !p.checkedIn } : p))
+      prev.map((p) => (p.id === id ? { ...p, checkedIn: !p.checkedIn } : p)),
     );
   };
 
@@ -87,6 +113,18 @@ export default function TripCheckInScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <ThemedText style={styles.headerTitle}>Check-in hành khách</ThemedText>
+        <View style={styles.placeholder} />
+      </View>
+
       <TripInfoCard
         trip={tripInfo!}
         checkedInCount={checkedCount}
@@ -98,12 +136,7 @@ export default function TripCheckInScreen() {
       <FlatList
         data={passengers}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <PassengerItem
-            passenger={item}
-            onToggle={() => toggleCheckIn(item.id)}
-          />
-        )}
+        renderItem={({ item }) => <PassengerItem passenger={item} />}
         contentContainerStyle={styles.listContent}
       />
 
@@ -132,6 +165,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f8f8",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "white",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  placeholder: {
+    width: 40, // Same width as back button to center title
   },
   listTitle: {
     fontSize: 18,
