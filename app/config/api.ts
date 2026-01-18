@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
 
   TRIP: {
     MY_TRIPS: '/trips/my-trips',
+    TRIP_BY_ID: (tripId: number) => `/trips/${tripId}`,
     DRIVER_TRIPS: (driverId: number) => `/trips/driver/${driverId}`,
     PASSENGERS_ON_TRIP: (tripId: number) => `/trips/${tripId}/passengers`,
     COMPLETE_TRIP: (tripId: number) => `/trips/${tripId}/complete`,

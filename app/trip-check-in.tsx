@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Passenger, PassengerOnTrip } from "./types/passenger";
+import { TripDetailedResponseDTO } from "./types/trip";
 import { getPassengersOnTrip } from "./services/tripService";
 import { useTrip } from "./hooks/useTrip";
 import { useAuth } from "./hooks/useAuth";
@@ -29,11 +30,11 @@ export default function TripCheckInScreen() {
   const [rawPassengerData, setRawPassengerData] = useState<PassengerOnTrip[]>(
     [],
   );
-  const { trips } = useTrip();
+  const [currentTrip, setCurrentTrip] =
+    useState<TripDetailedResponseDTO | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { getTripByIdAction } = useTrip();
   const { userToken } = useAuth();
-
-  // Find current trip from trips list
-  const currentTrip = trips.find((trip) => trip.tripId.toString() === tripId);
 
   // Convert PassengerOnTrip to legacy Passenger format for compatibility
   const convertToLegacyFormat = (
@@ -51,9 +52,18 @@ export default function TripCheckInScreen() {
   };
 
   useEffect(() => {
-    const fetchPassengers = async () => {
+    const fetchTripAndPassengers = async () => {
       if (tripId && userToken) {
         try {
+          setLoading(true);
+
+          // Fetch trip details
+          const tripDetails = await getTripByIdAction(parseInt(tripId));
+          if (tripDetails) {
+            setCurrentTrip(tripDetails);
+          }
+
+          // Fetch passengers
           const response = await getPassengersOnTrip(
             parseInt(tripId),
             userToken,
@@ -67,13 +77,15 @@ export default function TripCheckInScreen() {
             setPassengers(convertedPassengers);
           }
         } catch (error) {
-          console.error("Error fetching passengers:", error);
+          console.error("Error fetching trip data:", error);
+        } finally {
+          setLoading(false);
         }
       }
     };
 
-    fetchPassengers();
-  }, [tripId, userToken]);
+    fetchTripAndPassengers();
+  }, [tripId, userToken, getTripByIdAction]);
 
   const toggleCheckIn = (id: string) => {
     setPassengers((prev) =>
@@ -90,17 +102,12 @@ export default function TripCheckInScreen() {
         from: currentTrip.originName,
         to: currentTrip.destinationName,
         date: currentTrip.date,
-        time: currentTrip.departureTime
-          ? new Date(currentTrip.departureTime).toLocaleTimeString("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "08:00",
+        time: currentTrip.departureTime,
         totalPassengers: currentTrip.totalSeats,
       }
     : null;
 
-  if (!currentTrip) {
+  if (loading || !currentTrip) {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.loadingContainer}>

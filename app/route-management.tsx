@@ -15,19 +15,24 @@ import { useLocalSearchParams, router } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Ionicons } from "@expo/vector-icons";
-import { Trip, TripStatus } from "./types/trip";
+import { Trip, TripStatus, TripDetailedResponseDTO } from "./types/trip";
 import { useTrip } from "./hooks/useTrip";
+import { useAuth } from "./hooks/useAuth";
 
 export default function RouteManagementScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
-  const { trips, completeTripAction } = useTrip();
+  const { completeTripAction, getTripByIdAction, updateTripStatusAction } =
+    useTrip();
+  const { userID } = useAuth();
 
-  // Find current trip from trips list
-  const trip = trips.find((t) => t.tripId.toString() === tripId);
+  // Trip state
+  const [trip, setTrip] = useState<TripDetailedResponseDTO | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const [selectedStatus, setSelectedStatus] = useState<TripStatus>("Waiting");
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  const [statusNote, setStatusNote] = useState("");
 
   // Cost information state
   const [costInfo, setCostInfo] = useState({
@@ -43,29 +48,50 @@ export default function RouteManagementScreen() {
   // Initialize selected status when trip is loaded
   useEffect(() => {
     if (trip) {
-      setSelectedStatus(trip.status);
+      setSelectedStatus(trip.status as TripStatus);
     }
   }, [trip]);
 
+  // Fetch trip details
+  useEffect(() => {
+    const fetchTripDetails = async () => {
+      if (tripId) {
+        try {
+          setLoading(true);
+          const tripDetails = await getTripByIdAction(parseInt(tripId));
+          if (tripDetails) {
+            setTrip(tripDetails);
+          }
+        } catch (error) {
+          console.error("Error fetching trip details:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchTripDetails();
+  }, [tripId, getTripByIdAction]);
+
   const statusOptions = [
-    { label: "Đang chờ", value: "WAITING" as TripStatus },
-    { label: "Đang chạy", value: "RUNNING" as TripStatus },
-    { label: "Bị trễ", value: "DELAYED" as TripStatus },
-    { label: "Hoàn thành", value: "COMPLETED" as TripStatus },
-    { label: "Đã hủy", value: "CANCELLED" as TripStatus },
+    { label: "Đang chờ", value: "Waiting" as TripStatus },
+    { label: "Đang chạy", value: "Running" as TripStatus },
+    { label: "Bị trễ", value: "Delayed" as TripStatus },
+    { label: "Hoàn thành", value: "Completed" as TripStatus },
+    { label: "Đã hủy", value: "Cancelled" as TripStatus },
   ];
 
   const getStatusColor = (status: TripStatus) => {
     switch (status) {
       case "Waiting":
         return "#FFF3E0";
-      case "RUNNING":
+      case "Running":
         return "#E3F2FD";
-      case "DELAYED":
+      case "Delayed":
         return "#FFEBEE";
-      case "COMPLETED":
+      case "Completed":
         return "#E8F5E8";
-      case "CANCELLED":
+      case "Cancelled":
         return "#F3E5F5";
       default:
         return "#F5F5F5";
@@ -76,13 +102,13 @@ export default function RouteManagementScreen() {
     switch (status) {
       case "Waiting":
         return "#F57C00";
-      case "RUNNING":
+      case "Running":
         return "#1976D2";
-      case "DELAYED":
+      case "Delayed":
         return "#D32F2F";
-      case "COMPLETED":
+      case "Completed":
         return "#388E3C";
-      case "CANCELLED":
+      case "Cancelled":
         return "#7B1FA2";
       default:
         return "#666";
@@ -97,15 +123,32 @@ export default function RouteManagementScreen() {
 
     setIsLoading(true);
     try {
-      if (selectedStatus === "COMPLETED") {
+      if (selectedStatus === "Completed") {
         // Use the completeTripAction from hook with new DTO structure
         const success = await completeTripAction(trip.tripId, {
-          driverId: parseInt(trip.driverId), // Convert to number
+          driverId: userID || 0, // Use userID from auth context
           completionNote: costInfo.notes,
           actualDistanceKm: parseFloat(costInfo.actualDistanceKm) || 0,
         });
 
         if (success) {
+          // Refresh trip data to show updated status
+          const updatedTrip = await getTripByIdAction(parseInt(tripId!));
+          if (updatedTrip) {
+            setTrip(updatedTrip);
+          }
+
+          // Clear cost info after successful completion
+          setCostInfo({
+            fuelCost: "",
+            tollFee: "",
+            maintenanceCost: "",
+            driverAllowance: "",
+            otherExpenses: "",
+            notes: "",
+            actualDistanceKm: "",
+          });
+
           Alert.alert("Thành công", "Hoàn thành chuyến đi thành công!", [
             { text: "OK", onPress: () => router.back() },
           ]);
@@ -114,17 +157,27 @@ export default function RouteManagementScreen() {
         }
       } else {
         // For other status updates, use updateTripStatusAction
-        // const success = await updateTripStatusAction(
-        //   trip.tripId,
-        //   selectedStatus,
-        // );
-        // if (success) {
-        //   Alert.alert("Thành công", "Cập nhật trạng thái tuyến thành công!", [
-        //     { text: "OK", onPress: () => router.back() },
-        //   ]);
-        // } else {
-        //   Alert.alert("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái");
-        // }
+        const success = await updateTripStatusAction(
+          trip.tripId,
+          selectedStatus,
+          statusNote || undefined,
+        );
+        if (success) {
+          // Refresh trip data to show updated status
+          const updatedTrip = await getTripByIdAction(parseInt(tripId!));
+          if (updatedTrip) {
+            setTrip(updatedTrip);
+          }
+
+          // Clear status note after successful update
+          setStatusNote("");
+
+          Alert.alert("Thành công", "Cập nhật trạng thái tuyến thành công!", [
+            { text: "OK", onPress: () => router.back() },
+          ]);
+        } else {
+          Alert.alert("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái");
+        }
       }
     } catch (error) {
       Alert.alert("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái");
@@ -143,7 +196,7 @@ export default function RouteManagementScreen() {
     return fuel + toll + maintenance + allowance + other;
   };
 
-  if (!trip) {
+  if (loading || !trip) {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -178,13 +231,13 @@ export default function RouteManagementScreen() {
             <View
               style={[
                 styles.currentStatusBadge,
-                { backgroundColor: getStatusColor(trip.status) },
+                { backgroundColor: getStatusColor(trip.status as TripStatus) },
               ]}
             >
               <Text
                 style={[
                   styles.currentStatusText,
-                  { color: getStatusTextColor(trip.status) },
+                  { color: getStatusTextColor(trip.status as TripStatus) },
                 ]}
               >
                 {statusOptions.find((opt) => opt.value === trip.status)?.label}
@@ -195,21 +248,7 @@ export default function RouteManagementScreen() {
           <View style={styles.tripDetails}>
             <View style={styles.detailRow}>
               <Ionicons name="time-outline" size={16} color="#666" />
-              <Text style={styles.detailText}>
-                {trip.departureTime
-                  ? new Date(trip.departureTime).toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "08:00"}{" "}
-                -{" "}
-                {trip.arrivalTime
-                  ? new Date(trip.arrivalTime).toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "17:00"}
-              </Text>
+              <Text style={styles.detailText}>{trip.departureTime}- </Text>
             </View>
             <View style={styles.detailRow}>
               <Ionicons name="calendar-outline" size={16} color="#666" />
@@ -326,6 +365,23 @@ export default function RouteManagementScreen() {
             </View>
           </View>
 
+          {/* Status Note Input */}
+          {selectedStatus !== trip?.status &&
+            selectedStatus !== "Completed" && (
+              <View style={styles.notesContainer}>
+                <Text style={styles.notesLabel}>Ghi chú (tùy chọn):</Text>
+                <TextInput
+                  style={styles.notesInput}
+                  value={statusNote}
+                  onChangeText={setStatusNote}
+                  placeholder="Nhập ghi chú về thay đổi trạng thái..."
+                  multiline
+                  numberOfLines={2}
+                  placeholderTextColor="#999"
+                />
+              </View>
+            )}
+
           {/* Update Button */}
           <TouchableOpacity
             style={[styles.updateButton, isLoading && styles.disabledButton]}
@@ -339,7 +395,7 @@ export default function RouteManagementScreen() {
         </View>
 
         {/* Cost Information Section - Only show when status is COMPLETED */}
-        {selectedStatus === "COMPLETED" && (
+        {selectedStatus === "Completed" && (
           <View style={styles.costSection}>
             <Text style={styles.sectionTitle}>Thông tin chi phí</Text>
             <Text style={styles.costSubtitle}>
@@ -464,18 +520,6 @@ export default function RouteManagementScreen() {
             </View>
           </View>
         )}
-
-        {/* Status History (Optional) */}
-        <View style={styles.historySection}>
-          <Text style={styles.sectionTitle}>Lịch sử trạng thái</Text>
-          <View style={styles.historyItem}>
-            <View style={styles.historyDot} />
-            <View style={styles.historyContent}>
-              <Text style={styles.historyStatus}>Đang chờ</Text>
-              <Text style={styles.historyTime}>08:00 - Hôm nay</Text>
-            </View>
-          </View>
-        </View>
       </ScrollView>
     </ThemedView>
   );

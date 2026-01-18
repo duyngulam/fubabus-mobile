@@ -15,10 +15,12 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import TripItem from "@/components/trip/TripItem";
+import WeekCalendar from "@/components/WeekCalendar";
 import { useTrip } from "../hooks/useTrip";
 import { Trip } from "../types/trip";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { formatDateToString } from "../utils/dateUtils";
 
 /* =========================
    SCREEN
@@ -41,31 +43,6 @@ export default function TripTodayScreen() {
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
 
   /* =========================
-     WEEK LOGIC (T2 → CN)
-  ========================= */
-
-  const getWeekDays = (date: Date) => {
-    const day = date.getDay(); // 0 = CN
-    const diff = day === 0 ? -6 : 1 - day; // về thứ 2
-
-    const monday = new Date(date);
-    monday.setDate(date.getDate() + diff);
-
-    return Array.from({ length: 7 }).map((_, index) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + index);
-
-      return {
-        date: d,
-        day: d.getDate(),
-        isToday: d.toDateString() === new Date().toDateString(),
-      };
-    });
-  };
-
-  const weekDays = getWeekDays(selectedDate);
-
-  /* =========================
      HANDLERS
   ========================= */
 
@@ -82,7 +59,7 @@ export default function TripTodayScreen() {
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
-    const dateString = date.toISOString().split("T")[0];
+    const dateString = formatDateToString(date);
     getTripByDate(dateString);
   };
 
@@ -131,29 +108,6 @@ export default function TripTodayScreen() {
      RENDER
   ========================= */
 
-  const renderCalendarDay = ({ item }: any) => (
-    <TouchableOpacity
-      style={[
-        styles.calendarDay,
-        item.isToday && styles.selectedDay,
-        selectedDate.toDateString() === item.date.toDateString() &&
-          styles.selectedDay,
-      ]}
-      onPress={() => handleDateChange(item.date)}
-    >
-      <Text
-        style={[
-          styles.dayText,
-          (item.isToday ||
-            selectedDate.toDateString() === item.date.toDateString()) &&
-            styles.selectedDayText,
-        ]}
-      >
-        {item.day}
-      </Text>
-    </TouchableOpacity>
-  );
-
   return (
     <ThemedView style={styles.container}>
       {/* HEADER */}
@@ -197,23 +151,10 @@ export default function TripTodayScreen() {
       >
         {/* WEEK CALENDAR */}
         {viewMode === "week" && (
-          <View style={styles.calendarSection}>
-            <View style={styles.weekDays}>
-              {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => (
-                <Text key={d} style={styles.weekDayText}>
-                  {d}
-                </Text>
-              ))}
-            </View>
-
-            <FlatList
-              data={weekDays}
-              numColumns={7}
-              renderItem={renderCalendarDay}
-              keyExtractor={(item) => item.date.toISOString()}
-              scrollEnabled={false}
-            />
-          </View>
+          <WeekCalendar
+            selectedDate={selectedDate}
+            onDateChange={handleDateChange}
+          />
         )}
 
         {/* TRIP LIST */}
@@ -285,19 +226,6 @@ const styles = StyleSheet.create({
   activeTabText: { color: "#D83E3E" },
 
   content: { padding: 16 },
-  calendarSection: { backgroundColor: "#fff", padding: 16, borderRadius: 12 },
-  weekDays: { flexDirection: "row", justifyContent: "space-between" },
-  weekDayText: { width: 40, textAlign: "center", color: "#666" },
-  calendarDay: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 20,
-  },
-  selectedDay: { backgroundColor: "#D83E3E" },
-  dayText: { color: "#333" },
-  selectedDayText: { color: "#fff", fontWeight: "bold" },
 
   tripSection: { marginTop: 16 },
   emptyText: { textAlign: "center", color: "#999" },

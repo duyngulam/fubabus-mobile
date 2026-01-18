@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
-import { getMyTrips, completeTrip, updateTripStatus } from '../services/tripService';
-import { Trip, TripStatus, CompleteTripRequest } from '../types/trip';
+import { getMyTrips, getTripById, completeTrip, updateTripStatus } from '../services/tripService';
+import { Trip, TripStatus, CompleteTripRequest, TripDetailedResponseDTO, TripStatusUpdateDTO } from '../types/trip';
 import { PageResponse } from '../types';
+import { formatDateToString, getTodayString } from '../utils/dateUtils';
 
 interface FetchTripOptions {
   status?: TripStatus | 'ALL';
@@ -15,7 +16,9 @@ export const useTrip = () => {
 
   // Data
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [tripDetails, setTripDetails] = useState<TripDetailedResponseDTO | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,9 +29,7 @@ export const useTrip = () => {
 
   // Filters
   const [selectedStatus, setSelectedStatus] = useState<TripStatus | 'ALL'>('ALL');
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
 
   /**
    * Core fetch trips
@@ -140,6 +141,39 @@ export const useTrip = () => {
   }, []);
 
   /**
+   * Get trip details by ID
+   */
+  const getTripByIdAction = useCallback(
+    async (tripId: number): Promise<TripDetailedResponseDTO | null> => {
+      if (!userToken) {
+        setError('Không có token xác thực');
+        return null;
+      }
+
+      try {
+        setLoadingDetails(true);
+        setError(null);
+
+        const response = await getTripById(tripId, userToken);
+
+        if (response.success) {
+          setTripDetails(response.data);
+          return response.data;
+        }
+        return null;
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Không thể tải chi tiết chuyến'
+        );
+        return null;
+      } finally {
+        setLoadingDetails(false);
+      }
+    },
+    [userToken]
+  );
+
+  /**
    * Complete trip
    */
   const completeTripAction = useCallback(
@@ -181,39 +215,39 @@ export const useTrip = () => {
   /**
    * Update trip status
    */
-  // const updateTripStatusAction = useCallback(
-  //   async (tripId: number, status: TripStatus): Promise<boolean> => {
-  //     if (!userToken) {
-  //       setError('Không có token xác thực');
-  //       return false;
-  //     }
+  const updateTripStatusAction = useCallback(
+    async (tripId: number, status: TripStatus, note?: string): Promise<boolean> => {
+      if (!userToken) {
+        setError('Không có token xác thực');
+        return false;
+      }
 
-  //     try {
-  //       setLoading(true);
-  //       setError(null);
+      try {
+        setLoading(true);
+        setError(null);
 
-  //       const response = await updateTripStatus(tripId, status, userToken);
+        const response = await updateTripStatus(tripId, { status, note }, userToken);
 
-  //       if (response.success) {
-  //         setTrips(prev =>
-  //           prev.map(trip =>
-  //             trip.tripId === tripId ? { ...trip, status } : trip
-  //           )
-  //         );
-  //         return true;
-  //       }
-  //       return false;
-  //     } catch (err) {
-  //       setError(
-  //         err instanceof Error ? err.message : 'Không thể cập nhật trạng thái'
-  //       );
-  //       return false;
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   },
-  //   [userToken]
-  // );
+        if (response.success) {
+          setTrips(prev =>
+            prev.map(trip =>
+              trip.tripId === tripId ? { ...trip, status } : trip
+            )
+          );
+          return true;
+        }
+        return false;
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Không thể cập nhật trạng thái'
+        );
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userToken]
+  );
 
   /**
    * Initial load → today trips
@@ -225,7 +259,9 @@ export const useTrip = () => {
   return {
     // Data
     trips,
+    tripDetails,
     loading,
+    loadingDetails,
     refreshing,
     error,
 
@@ -241,12 +277,13 @@ export const useTrip = () => {
     // Actions
     getTripToday,
     getTripByDate,
+    getTripByIdAction,
     refreshTrips,
     loadMoreTrips,
     updateStatusFilter,
 
     completeTripAction,
-    // updateTripStatusAction,
+    updateTripStatusAction,
   };
 };
 

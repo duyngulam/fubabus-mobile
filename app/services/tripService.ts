@@ -1,6 +1,6 @@
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { APIResponse, PageResponse } from '../types';
-import { CompleteTripRequest, Trip } from '../types/trip';
+import { CompleteTripRequest, Trip, TripDetailedResponseDTO, TripStatusUpdateDTO } from '../types/trip';
 import { Passenger, PassengerOnTrip } from '../types/passenger';
 
 
@@ -63,6 +63,29 @@ export const getMyTrips = async ({
   return response.json();
 };
 
+// Get trip by ID (detailed information)
+export const getTripById = async (
+  tripId: number,
+  token: string
+): Promise<APIResponse<TripDetailedResponseDTO>> => {
+  const response = await fetch(
+    `${API_BASE_URL}${API_ENDPOINTS.TRIP.TRIP_BY_ID(tripId)}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch trip details');
+  }
+
+  return response.json();
+};
+
 
 export const completeTrip = async (
   tripId: number,
@@ -111,25 +134,21 @@ export const getPassengersOnTrip = async (
   return response.json();
 };
 
-// New API: Update trip status
+// Update trip status
 export const updateTripStatus = async (
   tripId: number,
-  status: string,
-  token: string,
-  driverId: number
+  data: TripStatusUpdateDTO,
+  token: string
 ): Promise<APIResponse<void>> => {
   const response = await fetch(
     `${API_BASE_URL}${API_ENDPOINTS.TRIP.UPDATE_STATUS(tripId)}`,
     {
-      method: 'PUT',
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        status,
-        driverId
-      }),
+      body: JSON.stringify(data),
     }
   );
 
