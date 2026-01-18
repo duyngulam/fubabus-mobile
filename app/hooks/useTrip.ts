@@ -1,129 +1,138 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
-import { getDriverTrips, completeTrip, updateTripStatus } from '../services/tripService';
+import { getMyTrips, completeTrip, updateTripStatus } from '../services/tripService';
 import { Trip, TripStatus, CompleteTripRequest } from '../types/trip';
 import { PageResponse } from '../types';
 
+interface FetchTripOptions {
+  status?: TripStatus | 'ALL';
+  today?: boolean;
+  date?: string; // yyyy-MM-dd
+}
 
 export const useTrip = () => {
-  const { userToken, userID } = useAuth();
+  const { userToken } = useAuth();
+
+  // Data
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Pagination state
+  // Pagination
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [hasMore, setHasMore] = useState(false);
 
   // Filters
   const [selectedStatus, setSelectedStatus] = useState<TripStatus | 'ALL'>('ALL');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
 
   /**
-   * Fetch trips with filters
+   * Core fetch trips
    */
-  const fetchTrips = useCallback(async (
-    page: number = 0,
-    status?: TripStatus | 'ALL',
-    date?: string,
-    isRefresh: boolean = false
-  ) => {
-    if (!userToken || !userID) return;
+  const fetchTrips = useCallback(
+    async (
+      page: number = 0,
+      options?: FetchTripOptions,
+      isRefresh: boolean = false
+    ) => {
+      if (!userToken) return;
 
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
+      try {
+        isRefresh ? setRefreshing(true) : setLoading(true);
+        setError(null);
 
-      const statusFilter = status === 'ALL' ? undefined : status;
-      
-      const response = await getDriverTrips({
-        driverId: userID,
-        token: userToken,
-        status: statusFilter,
-        page,
-        size: 10,
-      });
-        
-        console.log('Fetched trips response:', response.data);
-        
+        const statusFilter =
+          options?.status && options.status !== 'ALL'
+            ? options.status
+            : undefined;
 
-      if (response.success) {
-        const { content, totalPages: total, number } = response.data;
-        
-          console.log('Fetched trips response content:', content);
-          
-        // Add id field for compatibility and filter by date on client side if needed
-        let processedTrips = content.map(trip => ({
-          ...trip,
-          id: trip.tripId.toString() // Add id field for compatibility
-        }));
-          
-          
-        
-//         if (date) {
-//   processedTrips = processedTrips.filter(trip => {
-//     if (!trip.departureTime) return false;
-//     const tripDate = trip.departureTime.split('T')[0];
-//     return tripDate === date;
-//   });
-// }
+        const response = await getMyTrips({
+          token: userToken,
+          status: statusFilter,
+          today: options?.today,
+          startDate: options?.date,
+          endDate: options?.date,
+          page,
+          size: 10,
+        });
 
-        if (page === 0 || isRefresh) {
-          // First page or refresh - replace all trips
+        if (response.success) {
+          const { content, totalPages, number } = response.data;
+
+          if (page === 0 || isRefresh) {
             setTrips(content);
-            console.log('Processed trips:', processedTrips);
-            
-        } else {
-          // Load more - append to existing trips
-          setTrips(prev => [...prev, ...processedTrips]);
+          } else {
+            setTrips(prev => [...prev, ...content]);
+          }
+
+          setCurrentPage(number);
+          setTotalPages(totalPages);
+          setHasMore(number < totalPages - 1);
         }
-
-        setCurrentPage(number);
-        setTotalPages(total);
-        setHasMore(number < total - 1);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Không thể tải danh sách chuyến'
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể tải danh sách chuyến');
-      console.error('Fetch trips error:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [userToken, userID]);
+    },
+    [userToken]
+  );
 
   /**
-   * Initial load and when filters change
+   * Load trips today
    */
-  useEffect(() => {
-    fetchTrips(0, selectedStatus, selectedDate);
-  }, [fetchTrips, selectedStatus, selectedDate]);
+  const getTripToday = useCallback(() => {
+    setCurrentPage(0);
+    fetchTrips(0, {
+      status: selectedStatus,
+      today: true,
+    });
+  }, [fetchTrips, selectedStatus]);
 
-    console.log("trip",trips);
-    
   /**
-   * Refresh trips (pull-to-refresh)
+   * Load trips by specific date
    */
-  const refreshTrips = useCallback(() => {
-    fetchTrips(0, selectedStatus, selectedDate, true);
-  }, [fetchTrips, selectedStatus, selectedDate]);
+  const getTripByDate = useCallback(
+    (date: string) => {
+      setSelectedDate(date);
+      setCurrentPage(0);
+
+      fetchTrips(0, {
+        status: selectedStatus,
+        date,
+      });
+    },
+    [fetchTrips, selectedStatus]
+  );
 
   /**
    * Load more trips (pagination)
    */
   const loadMoreTrips = useCallback(() => {
     if (!loading && hasMore) {
-      fetchTrips(currentPage + 1, selectedStatus, selectedDate);
+      fetchTrips(currentPage + 1, {
+        status: selectedStatus,
+        date: selectedDate,
+      });
     }
   }, [loading, hasMore, currentPage, fetchTrips, selectedStatus, selectedDate]);
 
   /**
-   * Update trip status filter
+   * Refresh trips (pull-to-refresh)
+   */
+  const refreshTrips = useCallback(() => {
+    getTripToday();
+  }, [getTripToday]);
+
+  /**
+   * Update status filter
    */
   const updateStatusFilter = useCallback((status: TripStatus | 'ALL') => {
     setSelectedStatus(status);
@@ -131,155 +140,113 @@ export const useTrip = () => {
   }, []);
 
   /**
-   * Update date filter
+   * Complete trip
    */
-  const updateDateFilter = useCallback((date: string) => {
-    setSelectedDate(date);
-    setCurrentPage(0);
-  }, []);
-
-  /**
-   * Complete a trip
-   */
-  const completeTripAction = useCallback(async (
-    tripId: number, 
-    data: CompleteTripRequest
-  ): Promise<boolean> => {
-    if (!userToken || !userID) {
-      setError('Không có token xác thực hoặc thông tin tài xế');
-      return false;
-    }
-
-    console.log("complete trip called with tripId:",tripId,"and data:",data);
-    
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Add driverId to the request data
-      const requestData = {
-        ...data,
-        driverId: userID
-      };
-      console.log("driverID",userID);
-      
-
-      const response = await completeTrip(tripId, requestData, userToken);
-      
-      if (response.success) {
-        // Update local trip status
-        setTrips(prev => prev.map(trip => 
-          trip.tripId === tripId 
-            ? { ...trip, status: 'COMPLETED' as TripStatus }
-            : trip
-        ));
-        return true;
+  const completeTripAction = useCallback(
+    async (tripId: number, data: CompleteTripRequest): Promise<boolean> => {
+      if (!userToken) {
+        setError('Không có token xác thực');
+        return false;
       }
-      return false;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể hoàn thành chuyến');
-      console.error('Complete trip error:', err);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [userToken, userID]);
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await completeTrip(tripId, data, userToken);
+
+        if (response.success) {
+          setTrips(prev =>
+            prev.map(trip =>
+              trip.tripId === tripId
+                ? { ...trip, status: 'COMPLETED' as TripStatus }
+                : trip
+            )
+          );
+          return true;
+        }
+        return false;
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Không thể hoàn thành chuyến'
+        );
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userToken]
+  );
 
   /**
    * Update trip status
    */
-  const updateTripStatusAction = useCallback(async (
-    tripId: number,
-    status: TripStatus
-  ): Promise<boolean> => {
-    if (!userToken || !userID) {
-      setError('Không có token xác thực hoặc thông tin tài xế');
-      return false;
-    }
+  // const updateTripStatusAction = useCallback(
+  //   async (tripId: number, status: TripStatus): Promise<boolean> => {
+  //     if (!userToken) {
+  //       setError('Không có token xác thực');
+  //       return false;
+  //     }
 
-    try {
-      setLoading(true);
-      setError(null);
+  //     try {
+  //       setLoading(true);
+  //       setError(null);
 
-      const response = await updateTripStatus(tripId, status, userToken, userID);
-      
-      if (response.success) {
-        // Update local trip status
-        setTrips(prev => prev.map(trip => 
-          trip.tripId === tripId 
-            ? { ...trip, status }
-            : trip
-        ));
-        return true;
-      }
-      return false;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể cập nhật trạng thái chuyến');
-      console.error('Update trip status error:', err);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [userToken, userID]);
+  //       const response = await updateTripStatus(tripId, status, userToken);
 
-  /**
-   * Get trips by status
-   */
-  const getTripsByStatus = useCallback((status: TripStatus) => {
-    return trips.filter(trip => trip.status === status);
-  }, [trips]);
+  //       if (response.success) {
+  //         setTrips(prev =>
+  //           prev.map(trip =>
+  //             trip.tripId === tripId ? { ...trip, status } : trip
+  //           )
+  //         );
+  //         return true;
+  //       }
+  //       return false;
+  //     } catch (err) {
+  //       setError(
+  //         err instanceof Error ? err.message : 'Không thể cập nhật trạng thái'
+  //       );
+  //       return false;
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   },
+  //   [userToken]
+  // );
 
   /**
-   * Get today's trips
+   * Initial load → today trips
    */
-  const getTodayTrips = useCallback(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return trips.filter(trip => trip.date === today);
-  }, [trips]);
-
-  /**
-   * Get trip statistics
-   */
-  const getStatistics = useCallback(() => {
-    const todayTrips = getTodayTrips();
-    return {
-      total: todayTrips.length,
-      completed: todayTrips.filter(t => t.status === 'COMPLETED').length,
-      running: todayTrips.filter(t => t.status === 'RUNNING').length,
-      waiting: todayTrips.filter(t => t.status === 'Waiting').length,
-      delayed: todayTrips.filter(t => t.status === 'DELAYED').length,
-      cancelled: todayTrips.filter(t => t.status === 'CANCELLED').length,
-    };
-  }, [getTodayTrips]);
+  useEffect(() => {
+    getTripToday();
+  }, []);
 
   return {
     // Data
     trips,
     loading,
-    error,
     refreshing,
-    
+    error,
+
     // Pagination
     currentPage,
     totalPages,
     hasMore,
-    
+
     // Filters
     selectedStatus,
     selectedDate,
-    
+
     // Actions
+    getTripToday,
+    getTripByDate,
     refreshTrips,
     loadMoreTrips,
     updateStatusFilter,
-    updateDateFilter,
+
     completeTripAction,
-    updateTripStatusAction,
-    
-    // Utilities
-    getTripsByStatus,
-    getTodayTrips,
-    getStatistics,
+    // updateTripStatusAction,
   };
 };
 

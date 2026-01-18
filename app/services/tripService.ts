@@ -13,20 +13,40 @@ interface GetDriverTripsParams {
   size?: number;
 }
 
-export const getDriverTrips = async ({
-  driverId,
+interface GetMyTripsParams {
+  token: string;
+  status?: string;
+  startDate?: string; // yyyy-MM-dd
+  endDate?: string;   // yyyy-MM-dd
+  today?: boolean;
+  page?: number;
+  size?: number;
+}
+
+export const getMyTrips = async ({
   token,
   status,
+  startDate,
+  endDate,
+  today = false,
   page = 0,
   size = 10,
-}: GetDriverTripsParams): Promise<APIResponse<PageResponse<Trip>>> => {
+}: GetMyTripsParams): Promise<APIResponse<PageResponse<Trip>>> => {
   const params = new URLSearchParams();
+
   params.append('page', page.toString());
   params.append('size', size.toString());
+
   if (status) params.append('status', status);
+  if (today) {
+    params.append('today', 'true');
+  } else {
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+  }
 
   const response = await fetch(
-    `${API_BASE_URL}${API_ENDPOINTS.TRIP.DRIVER_TRIPS(driverId)}?${params.toString()}`,
+    `${API_BASE_URL}${API_ENDPOINTS.TRIP.MY_TRIPS}?${params.toString()}`,
     {
       method: 'GET',
       headers: {
@@ -37,11 +57,12 @@ export const getDriverTrips = async ({
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch driver trips');
+    throw new Error('Failed to fetch my trips');
   }
 
   return response.json();
 };
+
 
 export const completeTrip = async (
   tripId: number,

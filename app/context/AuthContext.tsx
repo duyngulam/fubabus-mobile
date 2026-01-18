@@ -21,6 +21,9 @@ type SignInCredentials = {
 type AuthContextType = AuthState & {
   signIn: (creds: SignInCredentials) => Promise<void>;
   signOut: () => Promise<void>;
+  userToken: string | null;
+  userID: number | null;
+  userRole: string | null;
 };
 
 /* ================== CONTEXT ================== */

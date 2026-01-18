@@ -20,7 +20,7 @@ import { useTrip } from "./hooks/useTrip";
 
 export default function RouteManagementScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
-  const { trips, completeTripAction, updateTripStatusAction } = useTrip();
+  const { trips, completeTripAction } = useTrip();
 
   // Find current trip from trips list
   const trip = trips.find((t) => t.tripId.toString() === tripId);
@@ -114,18 +114,17 @@ export default function RouteManagementScreen() {
         }
       } else {
         // For other status updates, use updateTripStatusAction
-        const success = await updateTripStatusAction(
-          trip.tripId,
-          selectedStatus,
-        );
-
-        if (success) {
-          Alert.alert("Thành công", "Cập nhật trạng thái tuyến thành công!", [
-            { text: "OK", onPress: () => router.back() },
-          ]);
-        } else {
-          Alert.alert("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái");
-        }
+        // const success = await updateTripStatusAction(
+        //   trip.tripId,
+        //   selectedStatus,
+        // );
+        // if (success) {
+        //   Alert.alert("Thành công", "Cập nhật trạng thái tuyến thành công!", [
+        //     { text: "OK", onPress: () => router.back() },
+        //   ]);
+        // } else {
+        //   Alert.alert("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái");
+        // }
       }
     } catch (error) {
       Alert.alert("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái");
