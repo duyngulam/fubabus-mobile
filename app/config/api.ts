@@ -37,6 +37,7 @@ export const API_ENDPOINTS = {
 
   TICKET: {
     DETAIL: (ticketId: number) => `/tickets/${ticketId}`,
+    CHECK_IN: '/tickets/check-in',
   },
   // Example: TRIP, TICKET, etc.
 } as const;

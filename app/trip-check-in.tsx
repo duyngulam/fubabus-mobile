@@ -151,10 +151,17 @@ export default function TripCheckInScreen() {
             color={COLORS.primary}
           />
         </View>
-        <TouchableOpacity style={styles.completeButton}>
-          <Text style={styles.completeButtonText}>
-            Hoàn tất check-in ({waitingCount} còn lại)
-          </Text>
+        <TouchableOpacity
+          style={styles.completeButton}
+          onPress={() => router.push(`/qr-scanner?tripId=${tripId}`)}
+        >
+          <Ionicons
+            name="qr-code-outline"
+            size={20}
+            color="white"
+            style={{ marginRight: 8 }}
+          />
+          <Text style={styles.completeButtonText}>Scan QR Check-in</Text>
         </TouchableOpacity>
       </View>
     </ThemedView>
@@ -211,6 +218,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
   },
   completeButtonText: {
     color: "white",
