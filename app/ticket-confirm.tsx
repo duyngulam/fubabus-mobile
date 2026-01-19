@@ -13,8 +13,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useAuth } from "./hooks/useAuth";
-import { checkInTicket } from "./services/ticketService";
-import { CheckInTicketRequest } from "./types/checkin";
+import { checkInTicket, getTicketDetail } from "./services/ticketService";
+import { TicketResponse } from "./types/ticket";
 
 const COLORS = {
   primary: "#D83E3E",
@@ -30,7 +30,11 @@ export default function TicketConfirmScreen() {
   const { userToken } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [ticketDetails, setTicketDetails] = useState<TicketResponse | null>(
+    null,
+  );
 
+  console.log("Ticket details:", ticketCode);
   const handleCheckIn = async () => {
     if (!ticketCode || !userToken || isProcessing || isCheckedIn) {
       return;
@@ -39,30 +43,40 @@ export default function TicketConfirmScreen() {
     setIsProcessing(true);
 
     try {
-      const request: CheckInTicketRequest = {
-        ticketCode,
-        tripId: tripId ? parseInt(tripId) : null,
-        vehicleId: null, // Add vehicleId if available
-        checkInMethod: "QR",
-      };
+      // First get ticket details to validate
 
-      const response = await checkInTicket(request, userToken);
+      console.log("check ticket conđỉm", ticketCode);
+      const ticketResponse = await getTicketDetail(ticketCode, userToken);
+
+      setTicketDetails(ticketResponse);
+
+      // Then perform check-in
+      const response = await checkInTicket(ticketCode, userToken);
 
       // Success
       setIsCheckedIn(true);
 
+      // Show success popup with ticket details
+      const ticket = ticketResponse.data;
       Alert.alert(
-        "Check-in thành công! ✅",
-        `Mã vé: ${response.data.ticketCode}\nThời gian: ${new Date(response.data.checkInTime).toLocaleString("vi-VN")}\nTrạng thái: ${response.data.status}`,
+        "✅ Check-in thành công!",
+        `🎫 Mã vé: ${ticket.ticketInfo.ticketCode}\n` +
+          `👤 Hành khách: ${ticket.passengerInfo.fullName}\n` +
+          `💺 Ghế ngồi: ${ticket.seatInfo.seatNumber} (${ticket.seatInfo.floor})\n` +
+          `🚌 Tuyến: ${ticket.tripInfo.routeName}\n` +
+          `📱 SĐT: ${ticket.passengerInfo.phoneNumber}\n` +
+          `⏰ Thời gian: ${new Date().toLocaleString("vi-VN")}`,
         [
           {
-            text: "Tiếp tục scan",
+            text: "Tiếp tục check-in",
+            style: "default",
             onPress: () => {
               router.back(); // Go back to scanner
             },
           },
           {
-            text: "Về danh sách",
+            text: "Quay lại danh sách",
+            style: "cancel",
             onPress: () => {
               router.push(`/trip-check-in?tripId=${tripId}`);
             },
@@ -77,15 +91,20 @@ export default function TicketConfirmScreen() {
         errorMessage = error.message;
       }
 
-      Alert.alert("Check-in thất bại ❌", errorMessage, [
+      Alert.alert("❌ Check-in thất bại", errorMessage, [
         {
-          text: "Thử lại",
-          onPress: () => setIsProcessing(false),
+          text: "Tiếp tục check-in",
+          onPress: () => {
+            setIsProcessing(false);
+            router.back(); // Go back to scanner
+          },
         },
         {
-          text: "Quay lại",
+          text: "Quay lại danh sách",
           style: "cancel",
-          onPress: () => router.back(),
+          onPress: () => {
+            router.push(`/trip-check-in?tripId=${tripId}`);
+          },
         },
       ]);
     } finally {
@@ -127,8 +146,39 @@ export default function TicketConfirmScreen() {
         <View style={styles.ticketInfo}>
           <Text style={styles.ticketLabel}>Mã vé</Text>
           <Text style={styles.ticketCode}>
-            {formatTicketCode(ticketCode || "")}
+            {formatTicketCode(ticketCode.toString() || "")}
           </Text>
+
+          {/* Show detailed info if available */}
+          {ticketDetails && (
+            <View style={styles.ticketDetails}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Hành khách:</Text>
+                <Text style={styles.detailValue}>
+                  {ticketDetails.data.passengerInfo.fullName}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Ghế ngồi:</Text>
+                <Text style={styles.detailValue}>
+                  {ticketDetails.data.seatInfo.seatNumber} (
+                  {ticketDetails.data.seatInfo.floor})
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Tuyến:</Text>
+                <Text style={styles.detailValue}>
+                  {ticketDetails.data.tripInfo.routeName}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>SĐT:</Text>
+                <Text style={styles.detailValue}>
+                  {ticketDetails.data.passengerInfo.phoneNumber}
+                </Text>
+              </View>
+            </View>
+          )}
 
           {tripId && (
             <>
@@ -274,6 +324,32 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: COLORS.primary,
+  },
+  ticketDetails: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    width: "100%",
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "600",
+    flex: 2,
+    textAlign: "right",
   },
   statusContainer: {
     flexDirection: "row",
