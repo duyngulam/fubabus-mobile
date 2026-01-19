@@ -96,7 +96,7 @@ export default function TicketConfirmScreen() {
           text: "Tiếp tục check-in",
           onPress: () => {
             setIsProcessing(false);
-            router.back(); // Go back to scanner
+            router.push(`/qr-scanner?tripId=${tripId}`); // Go back to scanner
           },
         },
         {
@@ -245,7 +245,7 @@ export default function TicketConfirmScreen() {
 
         <TouchableOpacity
           style={styles.cancelButton}
-          onPress={() => router.back()}
+          onPress={() => router.push(`/qr-scanner?tripId=${tripId}`)}
         >
           <Ionicons
             name="close-circle-outline"
