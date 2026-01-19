@@ -58,31 +58,31 @@ export default function TicketConfirmScreen() {
 
       // Show success popup with ticket details
       const ticket = ticketResponse.data;
-      Alert.alert(
-        "✅ Check-in thành công!",
-        `🎫 Mã vé: ${ticket.ticketInfo.ticketCode}\n` +
-          `👤 Hành khách: ${ticket.passengerInfo.fullName}\n` +
-          `💺 Ghế ngồi: ${ticket.seatInfo.seatNumber} (${ticket.seatInfo.floor})\n` +
-          `🚌 Tuyến: ${ticket.tripInfo.routeName}\n` +
-          `📱 SĐT: ${ticket.passengerInfo.phoneNumber}\n` +
-          `⏰ Thời gian: ${new Date().toLocaleString("vi-VN")}`,
-        [
-          {
-            text: "Tiếp tục check-in",
-            style: "default",
-            onPress: () => {
-              router.back(); // Go back to scanner
-            },
-          },
-          {
-            text: "Quay lại danh sách",
-            style: "cancel",
-            onPress: () => {
-              router.push(`/trip-check-in?tripId=${tripId}`);
-            },
-          },
-        ],
-      );
+      // Alert.alert(
+      //   "✅ Check-in thành công!",
+      //   `🎫 Mã vé: ${ticket.ticketInfo.ticketCode}\n` +
+      //     `👤 Hành khách: ${ticket.passengerInfo.fullName}\n` +
+      //     `💺 Ghế ngồi: ${ticket.seatInfo.seatNumber} (${ticket.seatInfo.floor})\n` +
+      //     `🚌 Tuyến: ${ticket.tripInfo.routeName}\n` +
+      //     `📱 SĐT: ${ticket.passengerInfo.phoneNumber}\n` +
+      //     `⏰ Thời gian: ${new Date().toLocaleString("vi-VN")}`,
+      //   [
+      //     {
+      //       text: "Tiếp tục check-in",
+      //       style: "default",
+      //       onPress: () => {
+      //         router.back(); // Go back to scanner
+      //       },
+      //     },
+      //     {
+      //       text: "Quay lại danh sách",
+      //       style: "cancel",
+      //       onPress: () => {
+      //         router.push(`/trip-check-in?tripId=${tripId}`);
+      //       },
+      //     },
+      //   ],
+      // );
     } catch (error) {
       console.error("Check-in error:", error);
 

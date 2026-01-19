@@ -6,7 +6,7 @@ import { TicketResponse } from '../types/ticket';
  * Check-in a ticket using QR code or manual input
  */
 export const checkInTicket = async (
-  ticketCode: number,
+  ticketCode: string,
   token: string
 ): Promise<CheckInApiResponse> => {
   const response = await fetch(
@@ -51,7 +51,7 @@ export const checkInTicket = async (
  * Get ticket details by ticket code
  */
 export const getTicketDetail = async (
-  ticketCode: number,
+  ticketCode: string,
   token: string
 ): Promise<TicketResponse> => {
   const response = await fetch(

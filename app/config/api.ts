@@ -38,8 +38,8 @@ export const API_ENDPOINTS = {
   },
 
   TICKET: {
-    DETAIL: (ticketCode: number) => `/tickets/${ticketCode}`,
-    CHECK_IN: (ticketCode: number) => `/tickets/${ticketCode}/confirm`,
+    DETAIL: (ticketCode: string) => `/tickets/${ticketCode}`,
+    CHECK_IN: (ticketCode: string) => `/tickets/${ticketCode}/confirm`,
   },
   // Example: TRIP, TICKET, etc.
 } as const;
