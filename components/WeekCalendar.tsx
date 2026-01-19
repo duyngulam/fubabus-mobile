@@ -5,8 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../context/ThemeContext";
+
+const { width: screenWidth } = Dimensions.get("window");
 
 interface WeekCalendarProps {
   selectedDate: Date;
@@ -23,7 +27,13 @@ export default function WeekCalendar({
   selectedDate,
   onDateChange,
 }: WeekCalendarProps) {
+  const { theme } = useTheme();
   const [currentWeek, setCurrentWeek] = useState(new Date());
+
+  // Calculate responsive day width
+  const calendarPadding = 32; // Container padding (16px * 2)
+  const daySpacing = 4; // Total spacing between days
+  const dayWidth = (screenWidth - calendarPadding - daySpacing) / 7;
 
   // Initialize current week to the week containing selectedDate
   useEffect(() => {
@@ -82,28 +92,53 @@ export default function WeekCalendar({
   /* =========================
      RENDER HELPERS
   ========================= */
-  const renderCalendarDay = ({ item }: { item: DayItem }) => (
-    <TouchableOpacity
-      style={[
-        styles.calendarDay,
-        item.isToday && styles.todayDay,
-        selectedDate.toDateString() === item.date.toDateString() &&
-          styles.selectedDay,
-      ]}
-      onPress={() => handleDateSelect(item.date)}
-    >
-      <Text
+  const renderCalendarDay = ({ item }: { item: DayItem }) => {
+    const isSelected = selectedDate.toDateString() === item.date.toDateString();
+
+    return (
+      <TouchableOpacity
         style={[
-          styles.dayText,
-          item.isToday && styles.todayDayText,
-          selectedDate.toDateString() === item.date.toDateString() &&
-            styles.selectedDayText,
+          styles.calendarDay,
+          {
+            width: dayWidth,
+            height: dayWidth,
+            backgroundColor:
+              item.isToday && !isSelected
+                ? `${theme.colors.primary}10`
+                : isSelected
+                  ? theme.colors.primary
+                  : "transparent",
+            borderColor:
+              item.isToday && !isSelected
+                ? theme.colors.primary
+                : "transparent",
+          },
         ]}
+        onPress={() => handleDateSelect(item.date)}
+        activeOpacity={0.7}
       >
-        {item.day}
-      </Text>
-    </TouchableOpacity>
-  );
+        <Text
+          style={[
+            styles.dayText,
+            {
+              color: isSelected
+                ? theme.colors.primaryText
+                : item.isToday
+                  ? theme.colors.primary
+                  : theme.colors.text,
+              fontSize: theme.typography.fontSize.sm,
+              fontWeight:
+                isSelected || item.isToday
+                  ? theme.typography.fontWeight.bold
+                  : theme.typography.fontWeight.medium,
+            },
+          ]}
+        >
+          {item.day}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   const getWeekDateRange = () => {
     const firstDay = weekDays[0]?.date;
@@ -119,53 +154,112 @@ export default function WeekCalendar({
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.colors.card,
+          ...theme.shadows.base,
+          shadowColor: theme.colors.shadowColor,
+        },
+      ]}
+    >
       {/* WEEK NAVIGATION HEADER */}
       <View style={styles.weekHeader}>
-        <TouchableOpacity style={styles.navButton} onPress={goToPreviousWeek}>
-          <Ionicons name="chevron-back" size={20} color="#666" />
+        <TouchableOpacity
+          style={[
+            styles.navButton,
+            { backgroundColor: theme.colors.backgroundSecondary },
+          ]}
+          onPress={goToPreviousWeek}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={20}
+            color={theme.colors.textSecondary}
+          />
         </TouchableOpacity>
 
         <View style={styles.weekInfo}>
-          <Text style={styles.weekRangeText}>{getWeekDateRange()}</Text>
+          <Text
+            style={[
+              styles.weekRangeText,
+              {
+                color: theme.colors.text,
+                fontSize: theme.typography.fontSize.base,
+                fontWeight: theme.typography.fontWeight.semibold,
+              },
+            ]}
+          >
+            {getWeekDateRange()}
+          </Text>
           <TouchableOpacity onPress={goToCurrentWeek}>
-            <Text style={styles.currentWeekButton}>Tuần hiện tại</Text>
+            <Text
+              style={[
+                styles.currentWeekButton,
+                {
+                  color: theme.colors.primary,
+                  fontSize: theme.typography.fontSize.xs,
+                },
+              ]}
+            >
+              Tuần hiện tại
+            </Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.navButton} onPress={goToNextWeek}>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
+        <TouchableOpacity
+          style={[
+            styles.navButton,
+            { backgroundColor: theme.colors.backgroundSecondary },
+          ]}
+          onPress={goToNextWeek}
+        >
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.colors.textSecondary}
+          />
         </TouchableOpacity>
       </View>
 
       {/* DAY LABELS */}
       <View style={styles.weekDays}>
         {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((dayLabel) => (
-          <Text key={dayLabel} style={styles.weekDayText}>
+          <Text
+            key={dayLabel}
+            style={[
+              styles.weekDayText,
+              {
+                width: dayWidth,
+                color: theme.colors.textSecondary,
+                fontSize: theme.typography.fontSize.xs,
+                fontWeight: theme.typography.fontWeight.medium,
+              },
+            ]}
+          >
             {dayLabel}
           </Text>
         ))}
       </View>
 
       {/* CALENDAR DAYS */}
-      <FlatList
-        data={weekDays}
-        numColumns={7}
-        renderItem={renderCalendarDay}
-        keyExtractor={(item) => item.date.toISOString()}
-        scrollEnabled={false}
-        contentContainerStyle={styles.calendarGrid}
-      />
+      <View style={styles.calendarGrid}>
+        {weekDays.map((item, index) => (
+          <View key={item.date.toISOString()}>
+            {renderCalendarDay({ item })}
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
 
 /* =========================
-   STYLES
+   STYLES - Responsive & Themed
 ========================= */
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -182,20 +276,14 @@ const styles = StyleSheet.create({
   navButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: "#f5f5f5",
   },
   weekInfo: {
     alignItems: "center",
   },
   weekRangeText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
     marginBottom: 4,
   },
   currentWeekButton: {
-    fontSize: 12,
-    color: "#D83E3E",
     textDecorationLine: "underline",
   },
 
@@ -204,46 +292,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
+    paddingHorizontal: 2,
   },
   weekDayText: {
-    width: 40,
     textAlign: "center",
-    color: "#666",
-    fontSize: 12,
-    fontWeight: "500",
   },
 
-  // Calendar Grid
+  // Calendar Grid - Responsive
   calendarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
+    paddingHorizontal: 2,
   },
   calendarDay: {
-    width: 40,
-    height: 40,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 20,
+    borderRadius: 8,
     marginVertical: 2,
-  },
-  todayDay: {
-    backgroundColor: "#E8F4FD",
     borderWidth: 1,
-    borderColor: "#D83E3E",
-  },
-  selectedDay: {
-    backgroundColor: "#D83E3E",
   },
   dayText: {
-    color: "#333",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  todayDayText: {
-    color: "#D83E3E",
-    fontWeight: "600",
-  },
-  selectedDayText: {
-    color: "#fff",
-    fontWeight: "bold",
+    // Dynamic styles applied inline
   },
 });

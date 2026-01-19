@@ -2,6 +2,7 @@ import React from "react";
 import { Trip } from "@/app/types/trip";
 import { Pressable, Text, View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function TripItem({
   trip,
@@ -10,37 +11,22 @@ export default function TripItem({
   trip: Trip;
   onPress: () => void;
 }) {
+  const { theme } = useTheme();
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "WAITING":
-        return "#FFF3E0"; // Light orange
+        return theme.colors.waiting;
       case "RUNNING":
-        return "#E3F2FD"; // Light blue
+        return theme.colors.running;
       case "DELAYED":
-        return "#FFEBEE"; // Light red
+        return theme.colors.error;
       case "COMPLETED":
-        return "#E8F5E8"; // Light green
+        return theme.colors.completed;
       case "CANCELLED":
-        return "#F3E5F5"; // Light purple
+        return theme.colors.cancelled;
       default:
-        return "#F5F5F5"; // Light gray
-    }
-  };
-
-  const getStatusTextColor = (status: string) => {
-    switch (status) {
-      case "WAITING":
-        return "#F57C00"; // Orange
-      case "RUNNING":
-        return "#1976D2"; // Blue
-      case "DELAYED":
-        return "#D32F2F"; // Red
-      case "COMPLETED":
-        return "#388E3C"; // Green
-      case "CANCELLED":
-        return "#7B1FA2"; // Purple
-      default:
-        return "#666"; // Gray
+        return theme.colors.textTertiary;
     }
   };
 
@@ -63,34 +49,46 @@ export default function TripItem({
 
   return (
     <Pressable
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.card }]}
       onPress={() => {
         console.log("TripItem clicked:", trip.tripId); // Use tripId
         onPress();
       }}
     >
-      <View style={styles.card}>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            ...theme.shadows.base,
+            shadowColor: theme.colors.shadowColor,
+          },
+        ]}
+      >
         {/* Route Header */}
         <View style={styles.routeHeader}>
           <View style={styles.routeInfo}>
             <Ionicons
               name="location-outline"
               size={16}
-              color="#666"
+              color={theme.colors.textSecondary}
               style={styles.locationIcon}
             />
-            <Text style={styles.routeText}>{trip.routeName}</Text>
+            <Text style={[styles.routeText, { color: theme.colors.text }]}>
+              {trip.routeName}
+            </Text>
           </View>
           <View
             style={[
               styles.statusBadge,
-              { backgroundColor: getStatusColor(trip.status) },
+              { backgroundColor: `${getStatusColor(trip.status)}20` }, // Add transparency
             ]}
           >
             <Text
               style={[
                 styles.statusText,
-                { color: getStatusTextColor(trip.status) },
+                { color: getStatusColor(trip.status) },
               ]}
             >
               {getStatusText(trip.status)}
@@ -101,10 +99,21 @@ export default function TripItem({
         {/* Time Information */}
         <View style={styles.timeContainer}>
           <View style={styles.timeItem}>
-            <Ionicons name="time-outline" size={16} color="#666" />
+            <Ionicons
+              name="time-outline"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
             <View style={styles.timeInfo}>
-              <Text style={styles.timeLabel}>Giờ xuất bến</Text>
-              <Text style={styles.timeValue}>
+              <Text
+                style={[
+                  styles.timeLabel,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
+                Giờ xuất bến
+              </Text>
+              <Text style={[styles.timeValue, { color: theme.colors.text }]}>
                 {trip.departureTime
                   ? new Date(trip.departureTime).toLocaleTimeString("vi-VN", {
                       hour: "2-digit",
@@ -116,10 +125,21 @@ export default function TripItem({
           </View>
 
           <View style={styles.timeItem}>
-            <Ionicons name="time-outline" size={16} color="#666" />
+            <Ionicons
+              name="time-outline"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
             <View style={styles.timeInfo}>
-              <Text style={styles.timeLabel}>Giờ đến</Text>
-              <Text style={styles.timeValue}>
+              <Text
+                style={[
+                  styles.timeLabel,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
+                Giờ đến
+              </Text>
+              <Text style={[styles.timeValue, { color: theme.colors.text }]}>
                 {trip.arrivalTime
                   ? new Date(trip.arrivalTime).toLocaleTimeString("vi-VN", {
                       hour: "2-digit",
@@ -134,38 +154,83 @@ export default function TripItem({
         {/* Route Information */}
         <View style={styles.routeDetail}>
           <View style={styles.routePoint}>
-            <View style={styles.routeDot} />
-            <Text style={styles.routeLocation}>{trip.originName}</Text>
+            <View
+              style={[
+                styles.routeDot,
+                { backgroundColor: theme.colors.primary },
+              ]}
+            />
+            <Text style={[styles.routeLocation, { color: theme.colors.text }]}>
+              {trip.originName}
+            </Text>
           </View>
-          <View style={styles.routeLine} />
+          <View
+            style={[styles.routeLine, { backgroundColor: theme.colors.border }]}
+          />
           <View style={styles.routePoint}>
-            <View style={styles.routeDot} />
-            <Text style={styles.routeLocation}>{trip.destinationName}</Text>
+            <View
+              style={[
+                styles.routeDot,
+                { backgroundColor: theme.colors.primary },
+              ]}
+            />
+            <Text style={[styles.routeLocation, { color: theme.colors.text }]}>
+              {trip.destinationName}
+            </Text>
           </View>
         </View>
 
         {/* Seat Information */}
         <View style={styles.seatContainer}>
           <View style={styles.seatInfo}>
-            <Ionicons name="people-outline" size={16} color="#666" />
-            <Text style={styles.seatText}>
+            <Ionicons
+              name="people-outline"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
+            <Text
+              style={[styles.seatText, { color: theme.colors.textSecondary }]}
+            >
               {trip.checkedInSeats}/{trip.totalSeats} hành khách
             </Text>
           </View>
           <View style={styles.seatInfo}>
-            <Ionicons name="ticket-outline" size={16} color="#666" />
-            <Text style={styles.seatText}>{trip.bookedSeats} đã đặt</Text>
+            <Ionicons
+              name="ticket-outline"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
+            <Text
+              style={[styles.seatText, { color: theme.colors.textSecondary }]}
+            >
+              {trip.bookedSeats} đã đặt
+            </Text>
           </View>
         </View>
 
         {/* Vehicle Information */}
-        <View style={styles.vehicleContainer}>
-          <Ionicons name="bus-outline" size={16} color="#666" />
-          <Text style={styles.vehicleText}>
+        <View
+          style={[
+            styles.vehicleContainer,
+            { borderTopColor: theme.colors.border },
+          ]}
+        >
+          <Ionicons
+            name="bus-outline"
+            size={16}
+            color={theme.colors.textSecondary}
+          />
+          <Text
+            style={[styles.vehicleText, { color: theme.colors.textSecondary }]}
+          >
             {trip.licensePlate} - {trip.vehicleTypeName}
           </Text>
           <View style={styles.spacer} />
-          <Ionicons name="chevron-forward" size={16} color="#ccc" />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={theme.colors.textTertiary}
+          />
         </View>
       </View>
     </Pressable>
@@ -178,16 +243,13 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   card: {
-    backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
   },
   routeHeader: {
     flexDirection: "row",
@@ -206,7 +268,6 @@ const styles = StyleSheet.create({
   routeText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
     flex: 1,
   },
   statusBadge: {
@@ -233,24 +294,20 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontSize: 12,
-    color: "#666",
     marginBottom: 2,
   },
   timeValue: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
   },
   vehicleContainer: {
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
   },
   vehicleText: {
     fontSize: 14,
-    color: "#666",
     marginLeft: 8,
     fontWeight: "500",
   },
@@ -270,18 +327,15 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#D83E3E",
     marginRight: 12,
   },
   routeLocation: {
     fontSize: 14,
-    color: "#333",
     flex: 1,
   },
   routeLine: {
     width: 2,
     height: 20,
-    backgroundColor: "#E0E0E0",
     marginLeft: 3,
     marginRight: 12,
   },
@@ -299,7 +353,6 @@ const styles = StyleSheet.create({
   },
   seatText: {
     fontSize: 12,
-    color: "#666",
     marginLeft: 6,
   },
 });

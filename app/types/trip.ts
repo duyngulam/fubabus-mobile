@@ -1,9 +1,9 @@
 export type TripStatus =
   | 'Waiting'
-  | 'RUNNING'
-  | 'DELAYED'
-  | 'COMPLETED'
-  | 'CANCELLED';
+  | 'Running'
+  | 'Delayed'
+  | 'Completed'
+  | 'Cancelled';
 
 export interface Trip {
   driverId: string; // Driver ID for API calls

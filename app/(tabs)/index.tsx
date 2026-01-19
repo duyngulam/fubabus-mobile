@@ -16,11 +16,11 @@ import { Ionicons } from "@expo/vector-icons";
 
 import TripItem from "@/components/trip/TripItem";
 import WeekCalendar from "@/components/WeekCalendar";
-import { TripControlExample } from "../components/TripControlExample";
 import { useTrip } from "../hooks/useTrip";
 import { Trip } from "../types/trip";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useTheme } from "../../context/ThemeContext";
 import { formatDateToString } from "../utils/dateUtils";
 
 /* =========================
@@ -28,6 +28,7 @@ import { formatDateToString } from "../utils/dateUtils";
 ========================= */
 
 export default function TripTodayScreen() {
+  const { theme } = useTheme();
   const {
     trips,
     loading,
@@ -110,18 +111,26 @@ export default function TripTodayScreen() {
   ========================= */
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {/* HEADER */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
         <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[styles.tab, viewMode === "today" && styles.activeTab]}
+            style={[
+              styles.tab,
+              viewMode === "today" && {
+                backgroundColor: theme.colors.surface,
+                borderRadius: theme.radius.base,
+              },
+            ]}
             onPress={() => handleChangeViewMode("today")}
           >
             <Text
               style={[
-                styles.tabText,
-                viewMode === "today" && styles.activeTabText,
+                { color: theme.colors.primaryText },
+                viewMode === "today" && { color: theme.colors.primary },
               ]}
             >
               Hôm nay
@@ -129,13 +138,19 @@ export default function TripTodayScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tab, viewMode === "week" && styles.activeTab]}
+            style={[
+              styles.tab,
+              viewMode === "week" && {
+                backgroundColor: theme.colors.surface,
+                borderRadius: theme.radius.base,
+              },
+            ]}
             onPress={() => handleChangeViewMode("week")}
           >
             <Text
               style={[
-                styles.tabText,
-                viewMode === "week" && styles.activeTabText,
+                { color: theme.colors.primaryText },
+                viewMode === "week" && { color: theme.colors.primary },
               ]}
             >
               Tuần này
@@ -161,11 +176,17 @@ export default function TripTodayScreen() {
         {/* TRIP LIST */}
         <View style={styles.tripSection}>
           {loading && trips.length === 0 ? (
-            <ActivityIndicator size="large" color="#D83E3E" />
+            <ActivityIndicator size="large" color={theme.colors.primary} />
           ) : error ? (
-            <Text style={styles.errorText}>{error}</Text>
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>
+              {error}
+            </Text>
           ) : trips.length === 0 ? (
-            <Text style={styles.emptyText}>Không có chuyến đi</Text>
+            <Text
+              style={[styles.emptyText, { color: theme.colors.textSecondary }]}
+            >
+              Không có chuyến đi
+            </Text>
           ) : (
             trips.map((trip) => (
               <TripItem
@@ -176,16 +197,23 @@ export default function TripTodayScreen() {
             ))
           )}
         </View>
-
-        {/* GPS TRACKING DEMO */}
-        <TripControlExample />
       </ScrollView>
 
       {/* BOTTOM SHEET */}
       <Modal transparent visible={isBottomSheetVisible}>
-        <View style={styles.modalOverlay}>
+        <View
+          style={[
+            styles.modalOverlay,
+            { backgroundColor: theme.colors.overlay },
+          ]}
+        >
           <TouchableOpacity style={{ flex: 1 }} onPress={closeBottomSheet} />
-          <View style={styles.bottomSheet}>
+          <View
+            style={[
+              styles.bottomSheet,
+              { backgroundColor: theme.colors.surface },
+            ]}
+          >
             <TouchableOpacity
               style={styles.actionButton}
               onPress={handleTripCheckIn}
@@ -193,17 +221,25 @@ export default function TripTodayScreen() {
               <Ionicons
                 name="checkmark-circle-outline"
                 size={24}
-                color="green"
+                color={theme.colors.success}
               />
-              <Text style={styles.actionText}>Trip Check-in</Text>
+              <Text style={[styles.actionText, { color: theme.colors.text }]}>
+                Trip Check-in
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionButton}
               onPress={handleRouteManagement}
             >
-              <Ionicons name="settings-outline" size={24} color="orange" />
-              <Text style={styles.actionText}>Quản lý tuyến</Text>
+              <Ionicons
+                name="settings-outline"
+                size={24}
+                color={theme.colors.warning}
+              />
+              <Text style={[styles.actionText, { color: theme.colors.text }]}>
+                Quản lý tuyến
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -213,35 +249,48 @@ export default function TripTodayScreen() {
 }
 
 /* =========================
-   STYLES (GIỮ NGUYÊN)
+   STYLES - Modern Themed
 ========================= */
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
-  header: { backgroundColor: "#D83E3E", paddingTop: 50, padding: 16 },
+  container: {
+    flex: 1,
+  },
+  header: {
+    padding: 16,
+  },
   tabContainer: {
     flexDirection: "row",
     backgroundColor: "rgba(255,255,255,0.2)",
     borderRadius: 8,
   },
-  tab: { flex: 1, padding: 10, alignItems: "center" },
-  activeTab: { backgroundColor: "#fff", borderRadius: 6 },
-  tabText: { color: "#fff" },
-  activeTabText: { color: "#D83E3E" },
+  tab: {
+    flex: 1,
+    padding: 12,
+    alignItems: "center",
+  },
 
-  content: { padding: 16 },
+  content: {
+    padding: 16,
+  },
 
-  tripSection: { marginTop: 16 },
-  emptyText: { textAlign: "center", color: "#999" },
-  errorText: { textAlign: "center", color: "red" },
+  tripSection: {
+    marginTop: 16,
+  },
+  emptyText: {
+    textAlign: "center",
+    fontSize: 16,
+  },
+  errorText: {
+    textAlign: "center",
+    fontSize: 16,
+  },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
   bottomSheet: {
-    backgroundColor: "#fff",
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -251,5 +300,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
   },
-  actionText: { marginLeft: 12, fontSize: 16 },
+  actionText: {
+    marginLeft: 12,
+    fontSize: 16,
+  },
 });

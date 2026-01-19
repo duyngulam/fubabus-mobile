@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
+  Platform,
 } from "react-native";
 import { Passenger, PassengerOnTrip } from "./types/passenger";
 import { TripDetailedResponseDTO } from "./types/trip";
@@ -19,13 +22,11 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Ionicons } from "@expo/vector-icons";
 import * as Progress from "react-native-progress";
-
-const COLORS = {
-  primary: "#D83E3E",
-};
+import { useTheme } from "../context/ThemeContext";
 
 export default function TripCheckInScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
+  const { theme, isDark } = useTheme();
   const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [rawPassengerData, setRawPassengerData] = useState<PassengerOnTrip[]>(
     [],
@@ -109,94 +110,128 @@ export default function TripCheckInScreen() {
 
   if (loading || !currentTrip) {
     return (
-      <ThemedView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#D83E3E" />
-          <Text style={styles.loadingText}>Đang tải thông tin chuyến...</Text>
-        </View>
-      </ThemedView>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
+      >
+        <StatusBar
+          barStyle={isDark ? "light-content" : "dark-content"}
+          backgroundColor={theme.colors.surface}
+        />
+        <ThemedView style={styles.container}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text
+              style={[
+                styles.loadingText,
+                { color: theme.colors.textSecondary },
+              ]}
+            >
+              Đang tải thông tin chuyến...
+            </Text>
+          </View>
+        </ThemedView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
+    >
+      <StatusBar
+        barStyle={isDark ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.surface}
+      />
+      <ThemedView style={styles.container}>
+        {/* Header */}
+        <View
+          style={[styles.header, { backgroundColor: theme.colors.primary }]}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>Check-in hành khách</ThemedText>
-        <View style={styles.placeholder} />
-      </View>
-
-      <TripInfoCard
-        trip={tripInfo!}
-        checkedInCount={checkedCount}
-        waitingCount={waitingCount}
-      />
-
-      <ThemedText style={styles.listTitle}>Danh sách hành khách</ThemedText>
-
-      <FlatList
-        data={passengers}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PassengerItem passenger={item} />}
-        contentContainerStyle={styles.listContent}
-      />
-
-      <View style={styles.footer}>
-        <View style={styles.progressContainer}>
-          <ThemedText>
-            Tiến độ check-in: {checkedCount}/{passengers.length}
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <ThemedText style={styles.headerTitle}>
+            Check-in Hành Khách
           </ThemedText>
-          <Progress.Bar
-            progress={checkedCount / (passengers.length || 1)}
-            width={null}
-            color={COLORS.primary}
-          />
         </View>
-        <TouchableOpacity
-          style={styles.completeButton}
-          onPress={() => router.push(`/qr-scanner?tripId=${tripId}`)}
+
+        <TripInfoCard
+          trip={tripInfo!}
+          checkedInCount={checkedCount}
+          waitingCount={waitingCount}
+        />
+
+        <ThemedText style={styles.listTitle}>Danh sách hành khách</ThemedText>
+
+        <FlatList
+          data={passengers}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <PassengerItem passenger={item} />}
+          contentContainerStyle={styles.listContent}
+        />
+
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: theme.colors.surface,
+              borderTopColor: theme.colors.border,
+            },
+          ]}
         >
-          <Ionicons
-            name="qr-code-outline"
-            size={20}
-            color="white"
-            style={{ marginRight: 8 }}
-          />
-          <Text style={styles.completeButtonText}>Scan QR Check-in</Text>
-        </TouchableOpacity>
-      </View>
-    </ThemedView>
+          <View style={styles.progressContainer}>
+            <ThemedText>
+              Tiến độ check-in: {checkedCount}/{passengers.length}
+            </ThemedText>
+            <Progress.Bar
+              progress={checkedCount / (passengers.length || 1)}
+              width={null}
+              color={theme.colors.primary}
+            />
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.completeButton,
+              { backgroundColor: theme.colors.primary },
+            ]}
+            onPress={() => router.push(`/qr-scanner?tripId=${tripId}`)}
+          >
+            <Ionicons
+              name="qr-code-outline"
+              size={20}
+              color="white"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.completeButtonText}>Scan QR Check-in</Text>
+          </TouchableOpacity>
+        </View>
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#f8f8f8",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    padding: 15,
   },
   backButton: {
-    padding: 8,
+    marginRight: 16,
   },
   headerTitle: {
-    fontSize: 18,
+    color: "white",
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
   },
   placeholder: {
     width: 40, // Same width as back button to center title
@@ -212,16 +247,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   footer: {
-    backgroundColor: "white",
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
   },
   progressContainer: {
     marginBottom: 12,
   },
   completeButton: {
-    backgroundColor: COLORS.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
@@ -242,6 +274,5 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: "#666",
   },
 });

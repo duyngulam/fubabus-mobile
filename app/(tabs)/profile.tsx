@@ -19,11 +19,15 @@ import { useProfile } from "../hooks/useProfile";
 import { useAuth } from "../hooks/useAuth";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "../../context/ThemeContext";
+import { ThemedButton } from "../../components/ui/ThemedButton";
+import { ThemedCard } from "../../components/ui/ThemedCard";
+import { ThemedTextInput } from "../../components/ui/ThemedTextInput";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
+  const { theme } = useTheme();
   const {
     profile,
     loading,
@@ -77,7 +81,7 @@ export default function ProfileScreen() {
           } else if (buttonIndex === 1) {
             handleDeleteAvatar();
           }
-        }
+        },
       );
     } else {
       Alert.alert("Avatar", "Choose an option", [
@@ -97,7 +101,7 @@ export default function ProfileScreen() {
     if (status !== "granted") {
       Alert.alert(
         "Permission required",
-        "Please grant camera roll permissions to upload an avatar."
+        "Please grant camera roll permissions to upload an avatar.",
       );
       return;
     }
@@ -141,7 +145,7 @@ export default function ProfileScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -177,33 +181,48 @@ export default function ProfileScreen() {
 
   if (loading && !profile) {
     return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.light.tint} />
+      <ThemedView
+        style={[styles.centered, { backgroundColor: theme.colors.background }]}
+      >
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </ThemedView>
     );
   }
 
   if (error) {
     return (
-      <ThemedView style={styles.centered}>
-        <ThemedText type="defaultSemiBold">Lỗi: {error}</ThemedText>
-        <Button title="Thử lại" onPress={refresh} />
+      <ThemedView
+        style={[styles.centered, { backgroundColor: theme.colors.background }]}
+      >
+        <ThemedText
+          type="defaultSemiBold"
+          style={{ color: theme.colors.error }}
+        >
+          Lỗi: {error}
+        </ThemedText>
+        <ThemedButton title="Thử lại" onPress={refresh} variant="primary" />
       </ThemedView>
     );
   }
 
   if (!profile) {
     return (
-      <ThemedView style={styles.centered}>
-        <ThemedText>Không tìm thấy thông tin người dùng.</ThemedText>
-        <Button title="Đăng xuất" onPress={signOut} />
+      <ThemedView
+        style={[styles.centered, { backgroundColor: theme.colors.background }]}
+      >
+        <ThemedText style={{ color: theme.colors.text }}>
+          Không tìm thấy thông tin người dùng.
+        </ThemedText>
+        <ThemedButton title="Đăng xuất" onPress={signOut} variant="secondary" />
       </ThemedView>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <View style={styles.profileHeader}>
+    <ThemedView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <ThemedCard variant="surface" style={styles.profileHeader}>
         <TouchableOpacity onPress={handleAvatarPress} disabled={isUploading}>
           <Image
             source={{
@@ -214,31 +233,50 @@ export default function ProfileScreen() {
             style={styles.avatar}
           />
           {(isUploading || isUpdating) && (
-            <View style={styles.avatarOverlay}>
-              <ActivityIndicator color="white" />
+            <View
+              style={[
+                styles.avatarOverlay,
+                { backgroundColor: theme.colors.overlay },
+              ]}
+            >
+              <ActivityIndicator color={theme.colors.primaryText} />
             </View>
           )}
         </TouchableOpacity>
-        <ThemedText style={styles.name}>{profile.fullName}</ThemedText>
-        <ThemedText style={styles.email}>{profile.email}</ThemedText>
-      </View>
+        <ThemedText style={[styles.name, { color: theme.colors.text }]}>
+          {profile.fullName}
+        </ThemedText>
+        <ThemedText
+          style={[styles.email, { color: theme.colors.textSecondary }]}
+        >
+          {profile.email}
+        </ThemedText>
+      </ThemedCard>
 
-      <View style={styles.infoSection}>
+      <ThemedCard variant="surface" style={styles.infoSection}>
         <InfoRow label="Vai trò" value={profile.roleName} />
         <InfoRow
           label="Số điện thoại"
           value={profile.phoneNumber || "Chưa cập nhật"}
         />
         <InfoRow label="Địa chỉ" value={profile.address || "Chưa cập nhật"} />
+      </ThemedCard>
+
+      <View style={{ gap: theme.spacing[3] }}>
+        <ThemedButton
+          title="Chỉnh sửa thông tin"
+          onPress={handleEditProfile}
+          variant="secondary"
+          size="lg"
+        />
+
+        <ThemedButton
+          title="Đăng xuất"
+          onPress={signOut}
+          variant="primary"
+          size="lg"
+        />
       </View>
-
-      <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-        <Text style={styles.editButtonText}>Chỉnh sửa thông tin</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-        <Text style={styles.signOutButtonText}>Đăng xuất</Text>
-      </TouchableOpacity>
 
       {/* Edit Profile Modal */}
       <Modal
@@ -247,17 +285,41 @@ export default function ProfileScreen() {
         visible={isEditModalVisible}
         onRequestClose={handleCancelEdit}
       >
-        <View style={styles.modalOverlay}>
+        <View
+          style={[
+            styles.modalOverlay,
+            { backgroundColor: theme.colors.overlay },
+          ]}
+        >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalContainer}
           >
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
+            <View
+              style={[
+                styles.modalContent,
+                { backgroundColor: theme.colors.surface },
+              ]}
+            >
+              <View
+                style={[
+                  styles.modalHeader,
+                  { borderBottomColor: theme.colors.border },
+                ]}
+              >
                 <TouchableOpacity onPress={handleCancelEdit}>
-                  <Text style={styles.modalCancelButton}>Hủy</Text>
+                  <Text
+                    style={[
+                      styles.modalCancelButton,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    Hủy
+                  </Text>
                 </TouchableOpacity>
-                <ThemedText style={styles.modalTitle}>
+                <ThemedText
+                  style={[styles.modalTitle, { color: theme.colors.text }]}
+                >
                   Chỉnh sửa thông tin
                 </ThemedText>
                 <TouchableOpacity
@@ -267,7 +329,8 @@ export default function ProfileScreen() {
                   <Text
                     style={[
                       styles.modalSaveButton,
-                      isUpdating && styles.disabledButton,
+                      { color: theme.colors.primary },
+                      isUpdating && { opacity: 0.5 },
                     ]}
                   >
                     {isUpdating ? "Đang lưu..." : "Lưu"}
@@ -276,47 +339,41 @@ export default function ProfileScreen() {
               </View>
 
               <ScrollView style={styles.modalBody}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Họ và tên</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={editForm.fullName}
-                    onChangeText={(text) =>
-                      setEditForm((prev) => ({ ...prev, fullName: text }))
-                    }
-                    placeholder="Nhập họ và tên"
-                    editable={!isUpdating}
-                  />
-                </View>
+                <ThemedTextInput
+                  label="Họ và tên"
+                  value={editForm.fullName}
+                  onChangeText={(text) =>
+                    setEditForm((prev) => ({ ...prev, fullName: text }))
+                  }
+                  placeholder="Nhập họ và tên"
+                  editable={!isUpdating}
+                  containerStyle={{ marginBottom: theme.spacing[5] }}
+                />
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Số điện thoại</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={editForm.phoneNumber}
-                    onChangeText={(text) =>
-                      setEditForm((prev) => ({ ...prev, phoneNumber: text }))
-                    }
-                    placeholder="Nhập số điện thoại"
-                    keyboardType="phone-pad"
-                    editable={!isUpdating}
-                  />
-                </View>
+                <ThemedTextInput
+                  label="Số điện thoại"
+                  value={editForm.phoneNumber}
+                  onChangeText={(text) =>
+                    setEditForm((prev) => ({ ...prev, phoneNumber: text }))
+                  }
+                  placeholder="Nhập số điện thoại"
+                  keyboardType="phone-pad"
+                  editable={!isUpdating}
+                  containerStyle={{ marginBottom: theme.spacing[5] }}
+                />
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Địa chỉ</Text>
-                  <TextInput
-                    style={[styles.textInput, styles.textAreaInput]}
-                    value={editForm.address}
-                    onChangeText={(text) =>
-                      setEditForm((prev) => ({ ...prev, address: text }))
-                    }
-                    placeholder="Nhập địa chỉ"
-                    multiline
-                    numberOfLines={3}
-                    editable={!isUpdating}
-                  />
-                </View>
+                <ThemedTextInput
+                  label="Địa chỉ"
+                  value={editForm.address}
+                  onChangeText={(text) =>
+                    setEditForm((prev) => ({ ...prev, address: text }))
+                  }
+                  placeholder="Nhập địa chỉ"
+                  multiline
+                  numberOfLines={3}
+                  editable={!isUpdating}
+                  containerStyle={{ marginBottom: theme.spacing[5] }}
+                />
               </ScrollView>
             </View>
           </KeyboardAvoidingView>
@@ -326,12 +383,21 @@ export default function ProfileScreen() {
   );
 }
 
-const InfoRow = ({ label, value }: { label: string; value: string }) => (
-  <View style={styles.infoRow}>
-    <ThemedText style={styles.infoLabel}>{label}</ThemedText>
-    <ThemedText style={styles.infoValue}>{value}</ThemedText>
-  </View>
-);
+const InfoRow = ({ label, value }: { label: string; value: string }) => {
+  const { theme } = useTheme();
+  return (
+    <View style={[styles.infoRow, { borderBottomColor: theme.colors.border }]}>
+      <ThemedText
+        style={[styles.infoLabel, { color: theme.colors.textSecondary }]}
+      >
+        {label}
+      </ThemedText>
+      <ThemedText style={[styles.infoValue, { color: theme.colors.text }]}>
+        {value}
+      </ThemedText>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   centered: {
@@ -342,10 +408,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    gap: 20,
   },
   profileHeader: {
     alignItems: "center",
-    marginBottom: 30,
   },
   avatar: {
     width: 100,
@@ -359,7 +425,6 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -369,53 +434,26 @@ const styles = StyleSheet.create({
   },
   email: {
     fontSize: 16,
-    color: "gray",
   },
   infoSection: {
-    marginBottom: 20,
+    paddingVertical: 8,
   },
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
   infoLabel: {
     fontSize: 16,
-    color: "gray",
   },
   infoValue: {
     fontSize: 16,
     fontWeight: "500",
   },
-  editButton: {
-    backgroundColor: "#f0f0f0",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  editButtonText: {
-    color: "black",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  signOutButton: {
-    backgroundColor: Colors.light.tint,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  signOutButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
   },
   modalContainer: {
@@ -423,7 +461,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "white",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "80%",
@@ -435,47 +472,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
   },
   modalCancelButton: {
-    color: "#666",
     fontSize: 16,
   },
   modalSaveButton: {
-    color: Colors.light.tint,
     fontSize: 16,
     fontWeight: "bold",
-  },
-  disabledButton: {
-    opacity: 0.5,
   },
   modalBody: {
     flex: 1,
     padding: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 8,
-    color: "#333",
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#f9f9f9",
-  },
-  textAreaInput: {
-    height: 80,
-    textAlignVertical: "top",
   },
 });

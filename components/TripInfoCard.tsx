@@ -2,6 +2,8 @@ import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "./themed-text";
 import { ThemedView } from "./themed-view";
+import { ThemedCard } from "./ui/ThemedCard";
+import { useTheme } from "../context/ThemeContext";
 import {
   Ionicons,
   MaterialCommunityIcons,
@@ -18,31 +20,32 @@ type TripInfoCardProps = {
   };
   checkedInCount: number;
   waitingCount: number;
-};
-
-const COLORS = {
-  primary: "#D83E3E",
-  secondary: "#F5EFE1",
-  background: "#EAEAEA",
+  onQRScan?: () => void;
 };
 
 export default function TripInfoCard({
   trip,
   checkedInCount,
   waitingCount,
+  onQRScan,
 }: TripInfoCardProps) {
+  const { theme } = useTheme();
   return (
-    <ThemedView style={styles.card}>
+    <ThemedCard variant="elevated" style={{ margin: theme.spacing[4] }}>
       <View style={styles.row}>
         <Ionicons
           name="location-outline"
           size={20}
-          color={COLORS.primary}
+          color={theme.colors.primary}
           style={styles.icon}
         />
         <View>
-          <ThemedText style={styles.label}>Tuyến đường</ThemedText>
-          <ThemedText style={styles.value}>
+          <ThemedText
+            style={[styles.label, { color: theme.colors.textSecondary }]}
+          >
+            Tuyến đường
+          </ThemedText>
+          <ThemedText style={[styles.value, { color: theme.colors.text }]}>
             {trip.from} → {trip.to}
           </ThemedText>
         </View>
@@ -53,69 +56,107 @@ export default function TripInfoCard({
           <Ionicons
             name="calendar-outline"
             size={20}
-            color="gray"
+            color={theme.colors.textSecondary}
             style={styles.icon}
           />
           <View>
-            <ThemedText style={styles.label}>Ngày</ThemedText>
-            <ThemedText style={styles.value}>{trip.date}</ThemedText>
+            <ThemedText
+              style={[styles.label, { color: theme.colors.textSecondary }]}
+            >
+              Ngày
+            </ThemedText>
+            <ThemedText style={[styles.value, { color: theme.colors.text }]}>
+              {trip.date}
+            </ThemedText>
           </View>
         </View>
         <View style={styles.detailItem}>
           <Ionicons
             name="time-outline"
             size={20}
-            color="gray"
+            color={theme.colors.textSecondary}
             style={styles.icon}
           />
           <View>
-            <ThemedText style={styles.label}>Giờ đi</ThemedText>
-            <ThemedText style={styles.value}>{trip.time}</ThemedText>
+            <ThemedText
+              style={[styles.label, { color: theme.colors.textSecondary }]}
+            >
+              Giờ đi
+            </ThemedText>
+            <ThemedText style={[styles.value, { color: theme.colors.text }]}>
+              {trip.time}
+            </ThemedText>
           </View>
         </View>
         <View style={styles.detailItem}>
           <FontAwesome5
             name="users"
             size={16}
-            color="gray"
+            color={theme.colors.textSecondary}
             style={styles.icon}
           />
           <View>
-            <ThemedText style={styles.label}>Hành khách</ThemedText>
-            <ThemedText style={styles.value}>{trip.totalPassengers}</ThemedText>
+            <ThemedText
+              style={[styles.label, { color: theme.colors.textSecondary }]}
+            >
+              Hành khách
+            </ThemedText>
+            <ThemedText style={[styles.value, { color: theme.colors.text }]}>
+              {trip.totalPassengers}
+            </ThemedText>
           </View>
         </View>
       </View>
 
-      <View style={styles.tagsRow}>
-        <View style={[styles.tag, styles.checkedInTag]}>
-          <ThemedText style={styles.tagText}>
+      <View style={[styles.tagsRow, { borderTopColor: theme.colors.border }]}>
+        <View
+          style={[
+            styles.tag,
+            {
+              backgroundColor: `${theme.colors.success}15`,
+              borderColor: theme.colors.success,
+            },
+          ]}
+        >
+          <ThemedText style={[styles.tagText, { color: theme.colors.success }]}>
             Đã check-in: {checkedInCount}
           </ThemedText>
         </View>
-        <View style={[styles.tag, styles.waitingTag]}>
-          <ThemedText style={styles.tagText}>Chờ: {waitingCount}</ThemedText>
+        <View
+          style={[
+            styles.tag,
+            {
+              backgroundColor: `${theme.colors.info}15`,
+              borderColor: theme.colors.info,
+            },
+          ]}
+        >
+          <ThemedText style={[styles.tagText, { color: theme.colors.info }]}>
+            Chờ: {waitingCount}
+          </ThemedText>
         </View>
-        <TouchableOpacity style={styles.qrButton}>
-          <MaterialCommunityIcons name="qrcode-scan" size={24} color="black" />
+        <TouchableOpacity
+          style={[
+            styles.qrButton,
+            { backgroundColor: `${theme.colors.primary}10` },
+          ]}
+          onPress={onQRScan}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons
+            name="qrcode-scan"
+            size={24}
+            color={theme.colors.primary}
+          />
         </TouchableOpacity>
       </View>
-    </ThemedView>
+    </ThemedCard>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 16,
-    marginTop: 16,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    // ThemedCard will handle background, radius, padding, shadows
   },
   row: {
     flexDirection: "row",
@@ -130,12 +171,12 @@ const styles = StyleSheet.create({
   detailItem: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
   },
   icon: {
     marginRight: 8,
   },
   label: {
-    color: "gray",
     fontSize: 12,
   },
   value: {
@@ -146,7 +187,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
     paddingTop: 12,
     marginTop: 4,
   },
@@ -155,15 +195,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     marginRight: 8,
-  },
-  checkedInTag: {
-    backgroundColor: "#E6F4EA", // Light green
-    borderColor: "#4CAF50",
-    borderWidth: 1,
-  },
-  waitingTag: {
-    backgroundColor: "#EBF5FF", // Light blue
-    borderColor: "#2196F3",
     borderWidth: 1,
   },
   tagText: {
@@ -172,5 +203,7 @@ const styles = StyleSheet.create({
   },
   qrButton: {
     marginLeft: "auto",
+    padding: 8,
+    borderRadius: 8,
   },
 });

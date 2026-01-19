@@ -19,9 +19,11 @@ import { Trip, TripStatus, TripDetailedResponseDTO } from "./types/trip";
 import { useTrip } from "./hooks/useTrip";
 import { useAuth } from "./hooks/useAuth";
 import { useTripManager } from "./hooks/useTripManager";
+import { useTheme } from "../context/ThemeContext";
 
 export default function RouteManagementScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
+  const { theme, isDark } = useTheme();
   const { completeTripAction, getTripByIdAction, updateTripStatusAction } =
     useTrip();
   const { userID } = useAuth();
@@ -215,8 +217,12 @@ export default function RouteManagementScreen() {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#D83E3E" />
-          <Text style={styles.loadingText}>Đang tải thông tin chuyến...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text
+            style={[styles.loadingText, { color: theme.colors.textSecondary }]}
+          >
+            Đang tải thông tin chuyến...
+          </Text>
         </View>
       </ThemedView>
     );
@@ -225,7 +231,7 @@ export default function RouteManagementScreen() {
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
@@ -237,11 +243,26 @@ export default function RouteManagementScreen() {
 
       <ScrollView style={styles.content}>
         {/* Trip Info Card */}
-        <View style={styles.tripCard}>
+        <View
+          style={[
+            styles.tripCard,
+            {
+              backgroundColor: theme.colors.surface,
+              ...theme.shadows.base,
+              shadowColor: theme.colors.shadowColor,
+            },
+          ]}
+        >
           <View style={styles.routeHeader}>
             <View style={styles.routeInfo}>
-              <Ionicons name="location-outline" size={20} color="#666" />
-              <Text style={styles.routeText}>{trip.routeName}</Text>
+              <Ionicons
+                name="location-outline"
+                size={20}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={[styles.routeText, { color: theme.colors.text }]}>
+                {trip.routeName}
+              </Text>
             </View>
             <View
               style={[
@@ -262,22 +283,62 @@ export default function RouteManagementScreen() {
 
           <View style={styles.tripDetails}>
             <View style={styles.detailRow}>
-              <Ionicons name="time-outline" size={16} color="#666" />
-              <Text style={styles.detailText}>{trip.departureTime}- </Text>
+              <Ionicons
+                name="time-outline"
+                size={16}
+                color={theme.colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.detailText,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
+                {trip.departureTime}-{" "}
+              </Text>
             </View>
             <View style={styles.detailRow}>
-              <Ionicons name="calendar-outline" size={16} color="#666" />
-              <Text style={styles.detailText}>{trip.date}</Text>
+              <Ionicons
+                name="calendar-outline"
+                size={16}
+                color={theme.colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.detailText,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
+                {trip.date}
+              </Text>
             </View>
             <View style={styles.detailRow}>
-              <Ionicons name="bus-outline" size={16} color="#666" />
-              <Text style={styles.detailText}>
+              <Ionicons
+                name="bus-outline"
+                size={16}
+                color={theme.colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.detailText,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
                 {trip.licensePlate} - {trip.vehicleTypeName}
               </Text>
             </View>
             <View style={styles.detailRow}>
-              <Ionicons name="people-outline" size={16} color="#666" />
-              <Text style={styles.detailText}>
+              <Ionicons
+                name="people-outline"
+                size={16}
+                color={theme.colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.detailText,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
                 {trip.checkedInSeats}/{trip.totalSeats} hành khách -{" "}
                 {trip.bookedSeats} đã đặt
               </Text>
@@ -286,22 +347,55 @@ export default function RouteManagementScreen() {
         </View>
 
         {/* Status Management Section */}
-        <View style={styles.statusSection}>
-          <Text style={styles.sectionTitle}>Cập nhật trạng thái tuyến</Text>
+        <View
+          style={[
+            styles.statusSection,
+            {
+              backgroundColor: theme.colors.surface,
+              ...theme.shadows.base,
+              shadowColor: theme.colors.shadowColor,
+            },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            Cập nhật trạng thái tuyến
+          </Text>
 
           <View style={styles.pickerContainer}>
-            <Text style={styles.pickerLabel}>Chọn trạng thái mới:</Text>
+            <Text
+              style={[
+                styles.pickerLabel,
+                { color: theme.colors.textSecondary },
+              ]}
+            >
+              Chọn trạng thái mới:
+            </Text>
             <TouchableOpacity
-              style={styles.dropdownButton}
+              style={[
+                styles.dropdownButton,
+                {
+                  backgroundColor: theme.colors.background,
+                  borderColor: theme.colors.border,
+                },
+              ]}
               onPress={() => setIsDropdownVisible(true)}
             >
-              <Text style={styles.dropdownButtonText}>
+              <Text
+                style={[
+                  styles.dropdownButtonText,
+                  { color: theme.colors.text },
+                ]}
+              >
                 {
                   statusOptions.find((opt) => opt.value === selectedStatus)
                     ?.label
                 }
               </Text>
-              <Ionicons name="chevron-down" size={20} color="#666" />
+              <Ionicons
+                name="chevron-down"
+                size={20}
+                color={theme.colors.textSecondary}
+              />
             </TouchableOpacity>
           </View>
 
@@ -316,8 +410,21 @@ export default function RouteManagementScreen() {
               style={styles.modalOverlay}
               onPress={() => setIsDropdownVisible(false)}
             >
-              <View style={styles.dropdownModal}>
-                <Text style={styles.dropdownTitle}>Chọn trạng thái</Text>
+              <View
+                style={[
+                  styles.dropdownModal,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    ...theme.shadows.base,
+                    shadowColor: theme.colors.shadowColor,
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.dropdownTitle, { color: theme.colors.text }]}
+                >
+                  Chọn trạng thái
+                </Text>
                 <FlatList
                   data={statusOptions}
                   keyExtractor={(item) => item.value}
@@ -325,7 +432,12 @@ export default function RouteManagementScreen() {
                     <TouchableOpacity
                       style={[
                         styles.dropdownOption,
-                        selectedStatus === item.value && styles.selectedOption,
+                        {
+                          backgroundColor:
+                            selectedStatus === item.value
+                              ? theme.colors.background
+                              : "transparent",
+                        },
                       ]}
                       onPress={() => {
                         setSelectedStatus(item.value);
@@ -341,14 +453,21 @@ export default function RouteManagementScreen() {
                       <Text
                         style={[
                           styles.dropdownOptionText,
-                          selectedStatus === item.value &&
-                            styles.selectedOptionText,
+                          { color: theme.colors.text },
+                          selectedStatus === item.value && {
+                            color: theme.colors.primary,
+                            fontWeight: "600",
+                          },
                         ]}
                       >
                         {item.label}
                       </Text>
                       {selectedStatus === item.value && (
-                        <Ionicons name="checkmark" size={20} color="#D83E3E" />
+                        <Ionicons
+                          name="checkmark"
+                          size={20}
+                          color={theme.colors.primary}
+                        />
                       )}
                     </TouchableOpacity>
                   )}
@@ -384,15 +503,29 @@ export default function RouteManagementScreen() {
           {selectedStatus !== trip?.status &&
             selectedStatus !== "Completed" && (
               <View style={styles.notesContainer}>
-                <Text style={styles.notesLabel}>Ghi chú (tùy chọn):</Text>
+                <Text
+                  style={[
+                    styles.notesLabel,
+                    { color: theme.colors.textSecondary },
+                  ]}
+                >
+                  Ghi chú (tùy chọn):
+                </Text>
                 <TextInput
-                  style={styles.notesInput}
+                  style={[
+                    styles.notesInput,
+                    {
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      color: theme.colors.text,
+                    },
+                  ]}
                   value={statusNote}
                   onChangeText={setStatusNote}
                   placeholder="Nhập ghi chú về thay đổi trạng thái..."
                   multiline
                   numberOfLines={2}
-                  placeholderTextColor="#999"
+                  placeholderTextColor={theme.colors.textTertiary}
                 />
               </View>
             )}
@@ -543,10 +676,8 @@ export default function RouteManagementScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   header: {
-    backgroundColor: "#D83E3E",
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 50,
@@ -566,11 +697,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   tripCard: {
-    backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -590,7 +719,6 @@ const styles = StyleSheet.create({
   routeText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
     marginLeft: 8,
   },
   currentStatusBadge: {
@@ -612,10 +740,8 @@ const styles = StyleSheet.create({
   detailText: {
     marginLeft: 8,
     fontSize: 14,
-    color: "#666",
   },
   statusSection: {
-    backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
